@@ -1,159 +1,154 @@
-import socket, threading, hashlib, time, os, platform, subprocess, ipaddress
+from socket import socket
+from threading import Thread
+from hashlib import sha256
+from time import time, sleep
+import os
 from datetime import datetime
 
-# Declaracion de atributos
-nombreArchivo = None
-contenidoArchivo = None
-cantConexiones = None
-threadsClientes = []
-direccionesClientes = []
-cantidadListos = 0
-resultComprobacionHash = []
-tiemposDeTransmision = []
 
-def enviarArchivoAlCliente(socket, infoCliente, numCliente):
-    global cantidadListos
+numeroClientesProcesados = 0
+comprobacionesHash = {}
+estadisticasTransmision = {}
 
-    # Se recibe la confirmacion de listo
-    socket.recv(1024).decode()
-    cantidadListos += 1
 
-    # Se espera a que los demas clientes esten listos
-    while cantidadListos < cantConexiones:
-        ...
+class ThreadCliente(Thread):
+    def __init__(self, id, socket, direccionCliente, numeroConexiones, nombreArchivo, bytesArchivo):
+        Thread.__init__(self)
+        self.id = id
+        self.socket = socket
+        self.direccionCliente = direccionCliente
+        self.numeroConexiones = numeroConexiones
+        self.nombreArchivo = nombreArchivo
+        self.hashCode = None
+        self.startEnvio = None
+        self.bytesArchivo = bytesArchivo
+        print(
+            f"Cliente creado con id {id}, ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
 
-    # Se envia el id del cliente
-    socket.send(numCliente.encode())
-    time.sleep(0.2)
+    def run(self):
+        global numeroClientesProcesados, comprobacionesHash, estadisticasTransmision
+        self.socket.recv(1024).decode()
+        numeroClientesProcesados += 1
+        while numeroClientesProcesados < self.numeroConexiones:
+            sleep(0.1)
+        self.socket.send(self.id.encode())
+        sleep(0.1)
 
-    # Se envia la cantidad de conexiones concurrentes
-    socket.send(str(cantConexiones).encode())
-    time.sleep(0.2)
+        # Numero Conexiones
+        self.socket.send(str(self.numeroConexiones).encode())
+        sleep(0.1)
 
-    # Se envia el nombre del archivo
-    socket.send(nombreArchivo.encode())
-    time.sleep(0.2)
+        # Nombre del archivo
+        self.socket.send(nArchivo.encode())
+        sleep(0.1)
 
-    # Se envia el codigo de hash del archivo
-    hashCode = hashlib.sha512()
-    hashCode.update(contenidoArchivo)
-    socket.send(hashCode.digest())
-    time.sleep(0.2)
+        # Hash Archivo
+        self.hashCode = sha256()
+        self.hashCode.update(self.bytesArchivo)
+        self.socket.send(self.hashCode.digest())
+        sleep(0.1)
 
-    inicioTransmision = time.time()
+        self.startEnvio = time()
 
-    # Se envia el contenido del archivo
-    socket.send(contenidoArchivo)
-    socket.send('Fin'.encode())
-    time.sleep(0.2)
+        # Achivo en bytes
+        self.socket.send(self.bytesArchivo)
+        self.socket.send('Fin'.encode())
+        sleep(0.1)
 
-    tiemposDeTransmision[int(numCliente)-1] = time.time() - inicioTransmision
+        estadisticasTransmision[self.id] = time() - self.startEnvio
+        answerHash = bool(self.socket.recv(1024).decode())
+        if answerHash:
+            comprobacionesHash[self.id] = "Enviado Correctamente :D"
+        else:
+            comprobacionesHash[self.id] = "Error en la transferencia D:"
+        self.socket.close()
+        print(
+            f"Enviado Correctamente al Cliente {self.id} con IP {self.direccionCliente[0]} y puerto {self.direccionCliente[1]}")
 
-    # Se recibe el resultado de la comprobacion del hash
-    resultComprobacionHash[int(numCliente)-1] = socket.recv(1024).decode()
-    socket.close()
-    print("Archivo enviado al cliente ... ", infoCliente)
 
-def escribirLog(tiemposDeTransmision):
-    # a.
-    fechaStr = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    archivo = open("Logs/{}.txt".format(fechaStr), "w")
+print("------- Programa Servidor TCP -------\n")
+print("Recuerda ejecutar el comando 'truncate -s 100M 100MB.test'")
+print("Recuerda ejecutar el comando 'truncate -s 250M 250MB.test'")
+nArchivo = ""
+while True:
+    print("Presione 1 para el archivo de 100MB o 2 para el archivo de 250MB")
+    entrada = input()
+    if entrada.isnumeric():
+        if entrada == '1':
+            nArchivo = 'ArchivosAEnviar/100MB.test'
+            break
+        elif entrada == '2':
+            nArchivo = 'ArchivosAEnviar/250MB.test'
+            break
+        else:
+            print("Seleccione una opcion valida. Recuerde ejecutar el comando \n $'truncate -s 100M 100MB.test' o \n $'truncate -s 250M 250MB.test' para que funcione.")
+    else:
+        print("Seleccione una opcion valida")
 
-    # b.
-    archivo.write("Nombre del archivo enviado: {}\n".format(nombreArchivo))
-    archivo.write("Tamano del archivo enviado: {} bytes\n\n".format(os.path.getsize("ArchivosAEnviar/{}".format(nombreArchivo))))
+print("Archivo seleccionado correctamente.")
+file = open(nArchivo, "rb")
+bytesArchivo = file.read()
+file.close()
+print("Archivo cargado correctamente.")
 
-    # c.
-    archivo.write("Clientes a los que se realizo la transferencia:\n")
-    for i in range(cantConexiones):
-        archivo.write("Cliente {}: {}\n".format(i + 1, direccionesClientes[i]))
-    archivo.write("\n")
+numeroDeClientes = ""
+while True:
+    numeroDeClientes = input("Numero de clientes (Threads): ")
+    if numeroDeClientes.isnumeric():
+        numeroDeClientes = int(numeroDeClientes)
+        if numeroDeClientes <= 0 or numeroDeClientes > 25:
+            print("Seleccione una opción valida")
+        else:
+            break
+    else:
+        print("Seleccione una opción valida")
+s = socket()
+host = '0.0.0.0'
+port = 8000
+s.bind((host, port))
+s.listen(5)
+print(
+    f"Servidor corriendo en el puerto {port} (Recuerde encontar la IP usando el comando ifconfig\n")
 
-    # d.
-    archivo.write("Resultados de la transferencia:\n")
-    for i in range(cantConexiones):
-        archivo.write("Cliente {}: {}\n".format(i + 1, resultComprobacionHash[i]))
-    archivo.write("\n")
 
-    # e.
-    archivo.write("Tiempos de transmision:\n")
-    for i in range(cantConexiones):
-        archivo.write("Cliente {}: {:.2f} segundos\n".format(i + 1, tiemposDeTransmision[i]))
-    archivo.write("\n")
+arregloClientes = []
+arregloDirecciones = []
 
-    archivo.close()
+for i in range(numeroDeClientes):
+    socketCliente, direccionCliente = s.accept()
+    print(
+        f"Conexion del cliente con ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
+    t = ThreadCliente(i, socketCliente, direccionCliente,
+                      numeroDeClientes, nArchivo, bytesArchivo)
+    arregloClientes.append(t)
+    arregloDirecciones.append(direccionCliente)
 
-if __name__ == "__main__":
-    try:
-        # Se carga el contenido del archivo
-        nombreArchivo = input("\nIngrese el nombre del archivo a transferir (incluyendo la extension): ")
-        print("Cargando archivo...")
-        archivo = open("ArchivosAEnviar/{}".format(nombreArchivo), "rb")
-        contenidoArchivo = archivo.read()
-        archivo.close()
-        print("Archivo cargado")
+    if len(arregloClientes) == numeroDeClientes:
+        for t in arregloClientes:
+            t.start()
 
-        # Se establece la cantidad de clientes a atender al tiempo
-        cantConexiones = int(input("\nIngrese la cantidad de conexiones concurrentes: "))
-        if cantConexiones < 1:
-            raise ValueError("[Error] El numero debe ser mayor a 0")
+        for t in arregloClientes:
+            t.join()
 
-        # Se crea el socket del servidor (donde recibe a los clientes)
-        s = socket.socket()
-        host = None
+        # Log
+        date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        file = open("Logs/{}.txt".format(date), "w")
+        tamanioArchivo = os.path.getsize(f"ArchivosAEnviar/{nArchivo}")
+        file.write(
+            f"Archivo enviado: {nArchivo} - Tamanio en Bytes: {tamanioArchivo}")
+        file.write(
+            "Identificacion por conexión del cliente al que se realiza la transferencia de archivos:\n")
+        for i in range(numeroDeClientes):
+            file.write(f"Cliente {i}: {arregloDirecciones[i]}\n")
+        file.write("\n")
+        file.write("Resultados de la transferencia:\n")
+        for i in range(numeroDeClientes):
+            file.write(f"Cliente {i}: {comprobacionesHash[i]}\n")
+        file.write("\n")
 
-        try:  # Se intenta identificar la IP automaticamente
-            if platform.system() == 'Windows':
-                p = subprocess.Popen('ipconfig', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                host = str(p.stdout.readlines()[7]).split(" ")[-1].split("\\")[0]  # host = 192.168.0.2 (o similar)
-            elif platform.system() == 'Linux':
-                p = subprocess.Popen('ifconfig', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                host = str(p.stdout.readlines()[1]).split("inet")[1].split(" ")[1]  # host = 192.168.0.16 (o similar)
-
-            ipaddress.IPv4Network(host)
-
-        except:  # Si no se puede (es decir, si hay error), se le pregunta al usuario
-            host = input("\nIngrese la direccion IP de esta maquina (ejecutar el comando ipconfig o ifconfig en una terminal): ")
-
-        port = 1234
-        s.bind((host, port))
-        s.listen(25)
-        print("\nDireccion IP del servidor:", host)
-
-        # Se crea la carpeta para guardar el log (si no existe)
-        if not os.path.isdir('Logs'):
-            os.mkdir(os.path.join(os.getcwd(), "Logs"))
-
-        # Se inicializan las listas de clientes
-        resultComprobacionHash = [None for i in range(cantConexiones)]
-        tiemposDeTransmision = [None for i in range(cantConexiones)]
-
-        print("\nServidor listo para atender clientes")
-
-        # Se reciben y se atienden a los clientes
-        while True:
-            clientSocket, addr = s.accept()
-            print('Conexion establecida desde ... ', addr)
-            thread = threading.Thread(target=enviarArchivoAlCliente, args=(clientSocket, addr, str(len(threadsClientes)+1)))
-            threadsClientes.append(thread)
-            direccionesClientes.append(addr)
-
-            # Cuando se completa el grupo de clientes, se les envia el archivo y se escribe el log
-            if len(threadsClientes) == cantConexiones:
-                for thread in threadsClientes:
-                    thread.start()
-
-                for thread in threadsClientes:
-                    thread.join()
-
-                escribirLog(tiemposDeTransmision)
-
-                # Se reinician las listas de clientes
-                threadsClientes = []
-                direccionesClientes = []
-                cantidadListos = 0
-                resultComprobacionHash = [None for i in range(cantConexiones)]
-                tiemposDeTransmision = [None for i in range(cantConexiones)]
-
-    except (FileNotFoundError, ValueError, ConnectionResetError) as e:
-        print("\n", e, sep="")
+        file.write("Tiempos de transmision:\n")
+        for i in range(numeroDeClientes):
+            file.write(
+                f"Cliente {i}: {str(round(estadisticasTransmision[i]), 3)} segundos\n")
+        file.write("\n")
+        file.close()

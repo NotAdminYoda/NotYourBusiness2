@@ -54,11 +54,11 @@ def recibirArchivoDelServidor(s, listo):
     archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]), "rb")
     hashCode.update(archivo.read())
     archivo.close()
-    mensajeComprobacionHash = "La entrega del archivo fue exitosa" if hashCode.digest() == hashRecibido else "La entrega del archivo NO fue exitosa"
+    mensajeComprobacionHash = True if hashCode.digest() == hashRecibido else False
     print(mensajeComprobacionHash)
 
     # Se envia el resultado de la comprobacion del hash
-    s.send(mensajeComprobacionHash.encode())
+    s.send(str(mensajeComprobacionHash).encode())
 
     # Se crea y se escribe el log
     escribirLog(numCliente, nombreArchivo, cantConexiones, mensajeComprobacionHash, tiempoDeTransmision)
