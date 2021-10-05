@@ -12,7 +12,7 @@ estadisticasTransmision = {}
 
 
 class ThreadCliente(Thread):
-    def __init__(self, id, socket, direccionCliente, numeroConexiones, nombreArchivo, bytesArchivo):
+    def __init__(self, id, socket, direccionCliente, numeroConexiones, nombreArchivo, bytesArchivo, hashArchivo):
         Thread.__init__(self)
         self.id = id
         self.socket = socket
@@ -22,6 +22,7 @@ class ThreadCliente(Thread):
         self.hashCode = None
         self.startEnvio = None
         self.bytesArchivo = bytesArchivo
+        self.hashArchivo = hashArchivo
         print(
             f"Cliente creado con id {id}, ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
 
@@ -32,29 +33,14 @@ class ThreadCliente(Thread):
         while numeroClientesProcesados < self.numeroConexiones:
             sleep(0.1)
         self.socket.send(str(self.id).encode())
-        sleep(0.1)
-
-        # Numero Conexiones
         self.socket.send(str(self.numeroConexiones).encode())
-        sleep(0.1)
-
-        # Nombre del archivo
         self.socket.send(nArchivo.encode())
-        sleep(0.1)
-
-        # Hash Archivo
-        self.hashCode = sha256()
-        self.hashCode.update(self.bytesArchivo)
-        self.socket.send(self.hashCode.digest())
-        sleep(0.1)
-
+        self.socket.send(self.hashArchivo)
         self.startEnvio = time()
 
         # Achivo en bytes
         self.socket.send(self.bytesArchivo)
         self.socket.send('ArchivoEnviado'.encode())
-        sleep(0.1)
-
         estadisticasTransmision[self.id] = time() - self.startEnvio
         answerHash = bool(self.socket.recv(1024).decode())
         if answerHash:
@@ -62,8 +48,7 @@ class ThreadCliente(Thread):
         else:
             comprobacionesHash[self.id] = "Error en la transferencia D:"
         self.socket.close()
-        print(
-            f"Enviado Correctamente al Cliente {self.id} con IP {self.direccionCliente[0]} y puerto {self.direccionCliente[1]}")
+        print(f"Enviado Correctamente al Cliente {self.id} con IP {self.direccionCliente[0]} y puerto {self.direccionCliente[1]}")
 
 
 print("------- Programa Servidor TCP -------\n")
@@ -114,12 +99,16 @@ print(
 arregloClientes = []
 arregloDirecciones = []
 
+hashCode = sha256()
+hashCode.update(bytesArchivo)
+hashBytes = hashCode.digest()
+
 for i in range(numeroDeClientes):
     socketCliente, direccionCliente = s.accept()
     print(
         f"Conexion del cliente con ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
     t = ThreadCliente(i, socketCliente, direccionCliente,
-                      numeroDeClientes, nArchivo, bytesArchivo)
+                      numeroDeClientes, nArchivo, bytesArchivo, hashBytes)
     arregloClientes.append(t)
     arregloDirecciones.append(direccionCliente)
 
@@ -133,7 +122,7 @@ for i in range(numeroDeClientes):
         # Log
         date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         file = open("Logs/{}.txt".format(date), "w")
-        tamanioArchivo = os.path.getsize(f"ArchivosAEnviar/{nArchivo}")
+        tamanioArchivo = os.path.getsize(f"{nArchivo}")
         file.write(
             f"Archivo enviado: {nArchivo} - Tamanio en Bytes: {tamanioArchivo}")
         file.write(
