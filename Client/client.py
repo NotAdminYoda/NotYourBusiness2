@@ -1,141 +1,124 @@
-import socket
-import hashlib
-import traceback
-import time
-from threading import Thread
+import socket, threading, hashlib, time, os
 from datetime import datetime
 
-# Parámetro para fijar dirección genérica en la configuración del socket. Es IP genérica pues no depende de otro servidor para responder.
-TCP_IP = '0.0.0.0'
-# Puerto TCP de escucha (recepción de peticiones) en el servidor.
-TCP_PORT = 3000
-BUFFER_SIZE = 4096  # tamaño del buffer de empaquetamiento en máquina.
-SERVER_IP = input("Ingrese la dirección IP del servidor: ")
-SERVER_PORT = 8000
-BLOCK_SIZE = 4096
-DOWNLOADS_PATH = "ArchivosRecibidos/"
+# Declaracion de atributos
+host = None
+port = None
+transfExitosa = None
+tiempoDeTransmision = None
 
-log_info = []
-file_dict = dict()
+def recibirArchivoDelServidor(s, listo):
+    global host, port, transfExitosa, tiempoDeTransmision
 
+    # Se envía la confirmacion de "listo"
+    while not listo:
+        listo = input("Ingrese cualquier caracter cuando este listo para recibir: ")
+    s.send(b"Listo")
+    print("Cliente listo para recibir, esperando a los demas clientes")
 
-def hash(filename):
-    # Create the hash object, can use something other than `.sha256()` if you wish
-    file_hash = hashlib.sha256()
-    with open(filename, 'rb') as f:  # Open the file to read it's bytes
-        # Read from the file. Take in the amount declared above
-        fb = f.read(BLOCK_SIZE)
-        while len(fb) > 0:  # While there is still data being read from the file
-            file_hash.update(fb)  # Update the hash
-            fb = f.read(BLOCK_SIZE)  # Read the next block from the file
-    f.close()
-    hash_val = file_hash.hexdigest()
-    return hash_val
+    # Se recibe el numero del cliente
+    numCliente = s.recv(1024).decode()
 
+    # Se recibe la cantidad de conexiones concurrentes
+    cantConexiones = s.recv(1024).decode()
 
-class ServerThread(Thread):
-    def __init__(self, id, sock):
-        Thread.__init__(self)
-        self.id = id
-        self.sock = sock
-        self.port = TCP_PORT+self.id
+    # Se recibe el nombre del archivo
+    nombreArchivo = s.recv(1024).decode()
 
-    def run(self):
-        try:
-            conn_info = dict()
-            self.sock.bind((TCP_IP, self.port))
-            self.sock.connect((SERVER_IP, SERVER_PORT))
-            print(
-                f"Conexión establecida con el servidor {(TCP_IP, SERVER_PORT)}. Cliente {self.id} listo para recibir")
+    # Se recibe el hash del archivo
+    hashRecibido = s.recv(1024)
 
-            data = self.sock.recv(BUFFER_SIZE)
-            if len(data) > 0:
-                info = data.decode().split("###")
-                hash_val = info[1]
-                archivo = info[3].split("/")[2]
-                tamano = int(info[5])
+    # Se abre el archivo donde se guardara el contenido recibido
+    archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]), "wb")
 
-                file_dict["name"] = archivo
-                file_dict["size"] = tamano
+    print("Transmision iniciada, recibiendo archivo desde el servidor...")
+    inicioTransmision = time.time()
 
-                file = open(
-                    f"{DOWNLOADS_PATH}Cliente{self.id}-Prueba-{num_clientes}_{archivo}", 'wb')
-                recibidos = 0
-                start_time = time.time()
-                while recibidos < tamano:
-                    descarga = self.sock.recv(BUFFER_SIZE)
+    # Se recibe y se escribe el contenido del archivo
+    recibido = s.recv(65536)
+    i = 0
+    while not str(recibido).endswith('Fin\''):
+        archivo.write(recibido)
+        i+=1
+        print("Cliente {}: Parte {} recibida".format(numCliente,i))
+        recibido = s.recv(65536)
+    archivo.write(recibido[:-3])
 
-                    file.write(descarga)
-                    recibidos += len(descarga)
-                finish_time = time.time()
-                file.close()
+    tiempoDeTransmision = time.time() - inicioTransmision
+    print("Transmision completa. Archivo recibido.")
 
-                new_hash = hash(
-                    f"{DOWNLOADS_PATH}Cliente{self.id}-Prueba-{num_clientes}_{archivo}")
-                if(new_hash == hash_val):
-                    print(
-                        f"Descarga del cliente {self.id} finalizada con éxito. Valores hash coinciden")
-                    self.sock.send("HASH###OK".encode())
-                    conn_info["Transfer status"] = "Success - HASH matches"
-                else:
-                    print(
-                        f"Descarga del cliente {self.id} finalizada sin éxito. Valores hash no coinciden")
-                    self.sock.send("HASH###NOT_OK".encode())
-                    conn_info["Transfer status"] = "Error - HASH does not match"
+    archivo.close()
 
-                # Recoleccion de info para el log
+    # Se comprueba el hash recibido
+    hashCode = hashlib.sha512()
+    archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]), "rb")
+    hashCode.update(archivo.read())
+    archivo.close()
+    mensajeComprobacionHash = "La entrega del archivo fue exitosa" if hashCode.digest() == hashRecibido else "La entrega del archivo NO fue exitosa"
+    print(mensajeComprobacionHash)
 
-                conn_info["Client ID"] = self.id
-                conn_info["Client IP"] = TCP_IP
-                conn_info["Client PORT"] = self.port
-                conn_info["Transfer time"] = "%s miliseconds" % (
-                    (finish_time - start_time)*1000)
+    # Se envia el resultado de la comprobacion del hash
+    s.send(mensajeComprobacionHash.encode())
 
-                log_info.append(conn_info)
-            else:
-                raise Exception(
-                    "No se recibió la primera información desde el servidor")
+    # Se crea y se escribe el log
+    escribirLog(numCliente, nombreArchivo, cantConexiones, mensajeComprobacionHash, tiempoDeTransmision)
 
-        except:
-            traceback.print_exc()
+    s.close()
 
-        finally:
-            self.sock.close()
+def escribirLog(numCliente, nombreArchivo, cantConexiones, mensajeComprobacionHash, tiempoDeTransmision):
+    # a.
+    fechaStr = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    archivo = open("Logs/{} (Cliente {}).txt".format(fechaStr, numCliente), "w")
 
+    # b.
+    archivo.write("Nombre del archivo recibido: {}\n".format(nombreArchivo))
+    archivo.write("Tamano del archivo recibido: {} bytes\n\n".format(os.path.getsize("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]))))
 
-# Inicio del programa
-num_clientes = int(
-    input("Ingrese el número de conexiones que desea realizar con el servidor: "))
+    # c.
+    archivo.write("Servidor desde el que se realizo la transferencia: ({}, {})\n\n".format(host, port))
 
-threads = []
-for i in range(num_clientes):
-    mysock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    connection = ServerThread(i, mysock)
-    connection.start()
-    threads.append(connection)
+    # d.
+    archivo.write("Resultado de la transferencia: {}\n\n".format(mensajeComprobacionHash))
 
-for t in threads:
-    t.join()
+    # e.
+    archivo.write("Tiempo de transmision: {:.2f} segundos\n".format(tiempoDeTransmision))
 
-# Creación del log
-fecha = datetime.now()
-log_name = f"{fecha.year}-{fecha.month}-{fecha.day}-{fecha.hour}-{fecha.minute}-{fecha.second}-log.txt"
+    archivo.close()
 
-file_log = open(f"Logs/{log_name}", "w")
+if __name__ == "__main__":
+    try:
+        # Se establece la cantidad de clientes que se van a crear
+        cantThreads = int(input("Ingrese la cantidad de clientes a crear: "))
+        if cantThreads < 1:
+            raise ValueError("[Error] El numero debe ser mayor a 0")
 
-file_log.write(f"LOG {fecha}\n\n")
-file_log.write(f"SERVER IP: {SERVER_IP}\n")
-file_log.write(f"SERVER PORT: {SERVER_PORT}\n")
-file_log.write(f"Archivo recibido: {file_dict['name']}\n")
-file_log.write(f"Tamaño archivo: {file_dict['size']} bytes\n")
-file_log.write(f"Número de conexiones: {len(log_info)}\n\n")
-file_log.write(f"Información de conexiones: \n")
+        # Se crea la carpeta para guardar los archivos (si no existe)
+        if not os.path.isdir('ArchivosRecibidos'):
+            os.mkdir(os.path.join(os.getcwd(), "ArchivosRecibidos"))
 
-for data in log_info:
-    elements = list(data.items())
-    elements.sort()
-    for (key, val) in elements:
-        file_log.write(f"\t{key}: {val}\n")
-    file_log.write(f"\n")
+        # Se crea la carpeta para guardar los logs (si no existe)
+        if not os.path.isdir('Logs'):
+            os.mkdir(os.path.join(os.getcwd(), "Logs"))
 
-file_log.close()
+        # Se crean los threads de los clientes
+        host = input("Ingrese la direccion IP del servidor (esta fue indicada en la terminal donde se ejecuto el servidor): ")
+        port = 1234
+        threads = []
+
+        for i in range(cantThreads):
+            s = socket.socket()
+            s.connect((host, port))
+            print("Conexion establecida (Thread {}).".format(i+1))
+            thread = threading.Thread(target=recibirArchivoDelServidor, args=(s, '1'))
+            threads.append(thread)
+
+        for thread in threads:
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+
+        time.sleep(2)
+
+    except (ValueError, ConnectionResetError) as e:
+        print("\n", e, sep="")

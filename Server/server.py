@@ -1,149 +1,159 @@
-import socket
-import hashlib
-import os
-import time
-import traceback
-from threading import Thread
+import socket, threading, hashlib, time, os, platform, subprocess, ipaddress
 from datetime import datetime
 
-# Parámetro para fijar dirección genérica en la configuración del socket.
-TCP_IP = '0.0.0.0'
-# Puerto TCP de escucha (recepción de peticiones) en el servidor.
-TCP_PORT = 8000
-BUFFER_SIZE = 4096  # tamaño del buffer de empaquetamiento en máquina.
+# Declaracion de atributos
+nombreArchivo = None
+contenidoArchivo = None
+cantConexiones = None
+threadsClientes = []
+direccionesClientes = []
+cantidadListos = 0
+resultComprobacionHash = []
+tiemposDeTransmision = []
 
-log_info = []
+def enviarArchivoAlCliente(socket, infoCliente, numCliente):
+    global cantidadListos
 
-# Clase que establece hilos de conexión con los clientes que envíen petición de enlace.
+    # Se recibe la confirmacion de listo
+    socket.recv(1024).decode()
+    cantidadListos += 1
 
+    # Se espera a que los demas clientes esten listos
+    while cantidadListos < cantConexiones:
+        ...
 
-class ClientThread(Thread):
+    # Se envia el id del cliente
+    socket.send(numCliente.encode())
+    time.sleep(0.2)
 
-    def __init__(self, id, ip, port, sock, filename):
-        Thread.__init__(self)
-        self.id = id
-        self.ip = ip
-        self.port = port
-        self.sock = sock
-        self.filename = filename
-        # Confirmación de conexión con cada cliente.
-        print(
-            f"Nueva conexión desde{(ip,port)}. Cliente {id} listo para recibir.")
+    # Se envia la cantidad de conexiones concurrentes
+    socket.send(str(cantConexiones).encode())
+    time.sleep(0.2)
 
-    # Función run realiza el envío del mensaje solicitado de manera persistente utilizando el socket y el hilo abierto previamente.
-    def run(self):
-        try:
-            filesize = os.path.getsize(filename)
-            self.sock.sendall(
-                f'HASH###{hash_val}###FILE###{filename}###SIZE###{filesize}'.encode())
-            time.sleep(1)
-            # Algoritmo de lectura y envío.
-            with open(filename, "rb") as f:
-                start_time = time.time()
-                while True:
-                    bytes_read = f.read(BUFFER_SIZE)
-                    if not bytes_read:
-                        break
-                    self.sock.send(bytes_read)
-                finish_time = time.time()
+    # Se envia el nombre del archivo
+    socket.send(nombreArchivo.encode())
+    time.sleep(0.2)
 
-            hash_stat = None
-            data = self.sock.recv(BUFFER_SIZE)
-            if len(data) > 0:
-                info = data.decode().split("###")
-                if info[0] == "HASH":
-                    hash_stat = info[1]
-                self.sock.close()
-            else:
-                raise Exception(
-                    "No se recibió la confirmación del hash del cliente:", self.id)
+    # Se envia el codigo de hash del archivo
+    hashCode = hashlib.sha512()
+    hashCode.update(contenidoArchivo)
+    socket.send(hashCode.digest())
+    time.sleep(0.2)
 
-            # Recoleccion de info para el log
-            conn_info = dict()
-            conn_info["Client ID"] = self.id
-            conn_info["Client IP"] = self.ip
-            conn_info["Client PORT"] = self.port
-            conn_info["Transfer status"] = "Success" if hash_stat == "OK" else "Error"
-            conn_info["Transfer time"] = "%s miliseconds" % (
-                (finish_time - start_time)*1000)
+    inicioTransmision = time.time()
 
-            log_info.append(conn_info)
-        except:
-            traceback.print_exc()
-            self.sock.close()
+    # Se envia el contenido del archivo
+    socket.send(contenidoArchivo)
+    socket.send('Fin'.encode())
+    time.sleep(0.2)
 
+    tiemposDeTransmision[int(numCliente)-1] = time.time() - inicioTransmision
 
-# Inicio del programa
+    # Se recibe el resultado de la comprobacion del hash
+    resultComprobacionHash[int(numCliente)-1] = socket.recv(1024).decode()
+    socket.close()
+    print("Archivo enviado al cliente ... ", infoCliente)
 
-# Selección de archivo
-print("Los archivos disponibles son:\n1. 100 MB\n2. 250 MB\n")
-seleccion_arch = int(input("Ingrese el número del archivo que desea enviar: "))
-filename = "ArchivosAEnviar/"
-if(seleccion_arch == 1):
-    filename += "100MB.test"
-elif (seleccion_arch == 2):
-    filename += "250MB.test"
+def escribirLog(tiemposDeTransmision):
+    # a.
+    fechaStr = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    archivo = open("Logs/{}.txt".format(fechaStr), "w")
 
-# Calculo del hash del archivo
-BLOCK_SIZE = 4096
-file_hash = hashlib.sha256()
-with open(filename, 'rb') as f:
-    # Read from the file. Take in the amount declared above
-    fb = f.read(BLOCK_SIZE)
-    while len(fb) > 0:
-        file_hash.update(fb)
-        fb = f.read(BLOCK_SIZE)
-f.close()
-hash_val = file_hash.hexdigest()
+    # b.
+    archivo.write("Nombre del archivo enviado: {}\n".format(nombreArchivo))
+    archivo.write("Tamano del archivo enviado: {} bytes\n\n".format(os.path.getsize("ArchivosAEnviar/{}".format(nombreArchivo))))
 
-# Selección num de clientes
-num_clientes = int(input("Ingrese el número de clientes a conectar: "))
+    # c.
+    archivo.write("Clientes a los que se realizo la transferencia:\n")
+    for i in range(cantConexiones):
+        archivo.write("Cliente {}: {}\n".format(i + 1, direccionesClientes[i]))
+    archivo.write("\n")
 
-# Creación del socket
-tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-tcpsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-tcpsock.bind((TCP_IP, TCP_PORT))
-threads = []
+    # d.
+    archivo.write("Resultados de la transferencia:\n")
+    for i in range(cantConexiones):
+        archivo.write("Cliente {}: {}\n".format(i + 1, resultComprobacionHash[i]))
+    archivo.write("\n")
 
-tcpsock.listen(5)
-print("Servidor escuchando en el puerto", TCP_PORT)
+    # e.
+    archivo.write("Tiempos de transmision:\n")
+    for i in range(cantConexiones):
+        archivo.write("Cliente {}: {:.2f} segundos\n".format(i + 1, tiemposDeTransmision[i]))
+    archivo.write("\n")
 
-id = 0
-while len(threads) < num_clientes:
+    archivo.close()
+
+if __name__ == "__main__":
     try:
-        (conn, (ip, port)) = tcpsock.accept()
-        newthread = ClientThread(id, ip, port, conn, filename)
-        threads.append(newthread)
-        id += 1
-    except:
-        # tcpsock.shutdown(socket.SHUT_RD)
-        tcpsock.close()
-        print("Socket cerrado")
-        break
+        # Se carga el contenido del archivo
+        nombreArchivo = input("\nIngrese el nombre del archivo a transferir (incluyendo la extension): ")
+        print("Cargando archivo...")
+        archivo = open("ArchivosAEnviar/{}".format(nombreArchivo), "rb")
+        contenidoArchivo = archivo.read()
+        archivo.close()
+        print("Archivo cargado")
 
-for t in threads:
-    t.start()
-    t.join()
+        # Se establece la cantidad de clientes a atender al tiempo
+        cantConexiones = int(input("\nIngrese la cantidad de conexiones concurrentes: "))
+        if cantConexiones < 1:
+            raise ValueError("[Error] El numero debe ser mayor a 0")
 
+        # Se crea el socket del servidor (donde recibe a los clientes)
+        s = socket.socket()
+        host = None
 
-# Creación del log
-fecha = datetime.now()
-filesize = os.path.getsize(filename)
-log_name = f"{fecha.year}-{fecha.month}-{fecha.day}-{fecha.hour}-{fecha.minute}-{fecha.second}-log.txt"
+        try:  # Se intenta identificar la IP automaticamente
+            if platform.system() == 'Windows':
+                p = subprocess.Popen('ipconfig', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                host = str(p.stdout.readlines()[7]).split(" ")[-1].split("\\")[0]  # host = 192.168.0.2 (o similar)
+            elif platform.system() == 'Linux':
+                p = subprocess.Popen('ifconfig', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                host = str(p.stdout.readlines()[1]).split("inet")[1].split(" ")[1]  # host = 192.168.0.16 (o similar)
 
-file_log = open(f"Logs/{log_name}", "x")
+            ipaddress.IPv4Network(host)
 
-file_log.write(f"LOG {fecha}\n\n")
-file_log.write(f"Archivo enviado: {filename.split('/')[2]}\n")
-file_log.write(f"Tamaño archivo: {filesize} bytes\n")
-file_log.write(f"Número de conexiones: {len(log_info)}\n\n")
-file_log.write(f"Información de conexiones: \n")
+        except:  # Si no se puede (es decir, si hay error), se le pregunta al usuario
+            host = input("\nIngrese la direccion IP de esta maquina (ejecutar el comando ipconfig o ifconfig en una terminal): ")
 
-for data in log_info:
-    elements = list(data.items())
-    elements.sort()
-    for (key, val) in elements:
-        file_log.write(f"\t{key}: {val}\n")
-    file_log.write(f"\n")
+        port = 1234
+        s.bind((host, port))
+        s.listen(25)
+        print("\nDireccion IP del servidor:", host)
 
-file_log.close()
+        # Se crea la carpeta para guardar el log (si no existe)
+        if not os.path.isdir('Logs'):
+            os.mkdir(os.path.join(os.getcwd(), "Logs"))
+
+        # Se inicializan las listas de clientes
+        resultComprobacionHash = [None for i in range(cantConexiones)]
+        tiemposDeTransmision = [None for i in range(cantConexiones)]
+
+        print("\nServidor listo para atender clientes")
+
+        # Se reciben y se atienden a los clientes
+        while True:
+            clientSocket, addr = s.accept()
+            print('Conexion establecida desde ... ', addr)
+            thread = threading.Thread(target=enviarArchivoAlCliente, args=(clientSocket, addr, str(len(threadsClientes)+1)))
+            threadsClientes.append(thread)
+            direccionesClientes.append(addr)
+
+            # Cuando se completa el grupo de clientes, se les envia el archivo y se escribe el log
+            if len(threadsClientes) == cantConexiones:
+                for thread in threadsClientes:
+                    thread.start()
+
+                for thread in threadsClientes:
+                    thread.join()
+
+                escribirLog(tiemposDeTransmision)
+
+                # Se reinician las listas de clientes
+                threadsClientes = []
+                direccionesClientes = []
+                cantidadListos = 0
+                resultComprobacionHash = [None for i in range(cantConexiones)]
+                tiemposDeTransmision = [None for i in range(cantConexiones)]
+
+    except (FileNotFoundError, ValueError, ConnectionResetError) as e:
+        print("\n", e, sep="")
