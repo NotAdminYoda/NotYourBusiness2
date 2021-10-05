@@ -31,7 +31,7 @@ class ThreadCliente(Thread):
         numeroClientesProcesados += 1
         while numeroClientesProcesados < self.numeroConexiones:
             sleep(0.1)
-        self.socket.send(self.id.encode())
+        self.socket.send(str(self.id).encode())
         sleep(0.1)
 
         # Numero Conexiones
@@ -52,7 +52,7 @@ class ThreadCliente(Thread):
 
         # Achivo en bytes
         self.socket.send(self.bytesArchivo)
-        self.socket.send('Fin'.encode())
+        self.socket.send('ArchivoEnviado'.encode())
         sleep(0.1)
 
         estadisticasTransmision[self.id] = time() - self.startEnvio

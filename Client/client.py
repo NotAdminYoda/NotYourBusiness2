@@ -37,7 +37,7 @@ def recibirArchivoDelServidor(s, listo):
     # Se recibe y se escribe el contenido del archivo
     recibido = s.recv(65536)
     i = 0
-    while not str(recibido).endswith('Fin\''):
+    while not str(recibido).endswith('ArchivoEnviado\''):
         archivo.write(recibido)
         i+=1
         print("Cliente {}: Parte {} recibida".format(numCliente,i))
@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
         # Se crean los threads de los clientes
         host = input("Ingrese la direccion IP del servidor (esta fue indicada en la terminal donde se ejecuto el servidor): ")
-        port = 1234
+        port = 8000
         threads = []
 
         for i in range(cantThreads):
