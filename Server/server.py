@@ -127,17 +127,17 @@ for i in range(numeroDeClientes):
             f"Archivo enviado: {nArchivo} - Tamanio en Bytes: {tamanioArchivo}")
         file.write(
             "Identificacion por conexión del cliente al que se realiza la transferencia de archivos:\n")
-        for i in range(numeroDeClientes):
-            file.write(f"Cliente {i}: {arregloDirecciones[i]}\n")
+        for j in range(numeroDeClientes):
+            file.write(f"Cliente {j}: {arregloDirecciones[j]}\n")
         file.write("\n")
         file.write("Resultados de la transferencia:\n")
-        for i in range(numeroDeClientes):
-            file.write(f"Cliente {i}: {comprobacionesHash[i]}\n")
+        for j in range(numeroDeClientes):
+            file.write(f"Cliente {j}: {comprobacionesHash[j]}\n")
         file.write("\n")
 
         file.write("Tiempos de transmision:\n")
-        for i in range(numeroDeClientes):
+        for j in range(numeroDeClientes):
             file.write(
-                f"Cliente {i}: {str(round(estadisticasTransmision[i]), 3)} segundos\n")
+                f"Cliente {j}: {str(round(estadisticasTransmision[j]), 3)} segundos\n")
         file.write("\n")
         file.close()
