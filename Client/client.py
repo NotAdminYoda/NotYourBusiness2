@@ -61,8 +61,8 @@ def recibirArchivoDelServidor(s, listo):
                                                                      cantConexiones, nombreArchivo.split(".")[-1]), "rb")
     hashCode.update(archivo.read())
     archivo.close()
-    print(hashCode.digest())
-    print(hashRecibido)
+    print("CALCULADO",hashCode.digest())
+    print("RECIBIDO",hashRecibido)
     mensajeComprobacionHash = str(hashCode.digest) if str(
         hashCode.digest()) == str(hashRecibido) else "Error en la transferencia D:"
     s.send(mensajeComprobacionHash.encode())

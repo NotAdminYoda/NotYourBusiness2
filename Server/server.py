@@ -40,9 +40,13 @@ class ThreadCliente(Thread):
         sleep(0.1)
         self.socket.send(nArchivo.encode())
         sleep(0.1)
-        print(self.hashArchivo)
-        self.socket.send(self.hashArchivo)
-        sleep(0.1)
+        #print(self.hashArchivo)
+        #self.socket.send(self.hashArchivo)
+        #sleep(0.1)
+        hashCode = sha512()
+        hashCode.update(self.bytesArchivo)
+        self.socket.send(hashCode.digest())
+        time.sleep(0.1)
         self.startEnvio = time()
 
         # Achivo en bytes
