@@ -38,7 +38,8 @@ class ThreadCliente(Thread):
         sleep(0.1)
         self.socket.send(nArchivo.encode())
         sleep(0.1)
-        self.socket.send(self.hashArchivo)
+        print(self.hashArchivo.hexdigest())
+        self.socket.send(self.hashArchivo.digest())
         sleep(0.1)
         self.startEnvio = time()
 
@@ -107,14 +108,14 @@ arregloDirecciones = []
 
 hashCode = sha256()
 hashCode.update(bytesArchivo)
-hashBytes = hashCode.digest()
+#hashBytes = hashCode.digest()
 
 for i in range(numeroDeClientes):
     socketCliente, direccionCliente = s.accept()
     print(
         f"Conexion del cliente con ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
     t = ThreadCliente(i, socketCliente, direccionCliente,
-                      numeroDeClientes, nArchivo, bytesArchivo, hashBytes)
+                      numeroDeClientes, nArchivo, bytesArchivo, hashCode)
     arregloClientes.append(t)
     arregloDirecciones.append(direccionCliente)
 
@@ -144,6 +145,6 @@ for i in range(numeroDeClientes):
         file.write("Tiempos de transmision:\n")
         for j in range(numeroDeClientes):
             file.write(
-                f"Cliente {j}: {str(round(estadisticasTransmision[j]), 3)} segundos\n")
+                f"Cliente {j}: {estadisticasTransmision[j]} segundos\n")
         file.write("\n")
         file.close()
