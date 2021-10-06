@@ -54,7 +54,7 @@ def recibirArchivoDelServidor(s, listo):
     archivo.close()
     print(str(hashCode.digest()))
     print(str(hashRecibido))
-    mensajeComprobacionHash = True if hashCode.digest() == str(hashRecibido) else False
+    mensajeComprobacionHash = True if str(hashCode.digest()) == str(hashRecibido) else False
     s.send(str(mensajeComprobacionHash).encode())
     if mensajeComprobacionHash:
         mensajeComprobacionHash = "Enviado Correctamente :D"

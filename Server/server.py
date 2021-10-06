@@ -39,7 +39,7 @@ class ThreadCliente(Thread):
         self.socket.send(nArchivo.encode())
         sleep(0.1)
         print(str(self.hashArchivo))
-        self.socket.send(self.hashArchivo)
+        self.socket.send(self.hashArchivo.encode())
         sleep(0.1)
         self.startEnvio = time()
 
