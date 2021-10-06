@@ -1,7 +1,7 @@
 import copy
 from socket import socket
 from threading import Thread
-from hashlib import sha256
+from hashlib import sha256, sha512
 from time import time, sleep
 import os
 from datetime import datetime
@@ -13,19 +13,16 @@ BUFFER_SIZE = 4096
 
 
 class ThreadCliente(Thread):
-    def __init__(self, id, socket, direccionCliente, numeroConexiones, nombreArchivo, bytesArchivo):
+    def __init__(self, id, socket, direccionCliente, numeroConexiones, nombreArchivo, bytesArchivo, hashArchivo):
         Thread.__init__(self)
         self.id = id
         self.socket = socket
         self.direccionCliente = direccionCliente
         self.numeroConexiones = numeroConexiones
         self.nombreArchivo = nombreArchivo
-        self.hashCode = None
+        self.hashCode = hashArchivo
         self.startEnvio = None
         self.bytesArchivo = bytesArchivo
-        hashCode = sha256()
-        hashCode.update(bytesArchivo)
-        self.hashArchivo = hashCode.digest()
         print(
             f"Cliente creado con id {id}, ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
 
@@ -41,14 +38,9 @@ class ThreadCliente(Thread):
         sleep(0.1)
         self.socket.send(nArchivo.encode())
         sleep(0.1)
-
-        hashCode = sha256()
-        hashCode.update(self.bytesArchivo)
-        self.socket.send(hashCode.digest())
+        self.socket.send(self.hashCode)
         sleep(0.1)
-
         self.startEnvio = time()
-
         # Achivo en bytes
         self.socket.send(self.bytesArchivo)
         sleep(0.1)
@@ -86,6 +78,9 @@ bytesArchivo = file.read()
 file.close()
 print("Archivo cargado correctamente.")
 
+hashArchivo = sha256()
+hashArchivo.update(bytesArchivo)
+hashBytes = hashArchivo.digest()
 numeroDeClientes = ""
 while True:
     numeroDeClientes = input("Numero de clientes (Threads): ")
@@ -102,8 +97,7 @@ host = '0.0.0.0'
 port = 8000
 s.bind((host, port))
 s.listen(5)
-print(
-    f"Servidor corriendo en el puerto {port} (Recuerde encontar la IP usando el comando ifconfig\n")
+print(f"Servidor corriendo en el puerto {port} (Recuerde encontar la IP usando el comando ifconfig\n")
 
 
 arregloClientes = []
@@ -114,7 +108,7 @@ for i in range(numeroDeClientes):
     print(
         f"Conexion del cliente con ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
     t = ThreadCliente(i, socketCliente, direccionCliente,
-                      numeroDeClientes, nArchivo, copy.copy(bytesArchivo))
+                      numeroDeClientes, nArchivo, copy.copy(bytesArchivo), hashBytes)
     arregloClientes.append(t)
     arregloDirecciones.append(direccionCliente)
 
