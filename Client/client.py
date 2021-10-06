@@ -1,4 +1,3 @@
-from genericpath import getsize
 from socket import socket
 from threading import Thread
 from hashlib import sha256

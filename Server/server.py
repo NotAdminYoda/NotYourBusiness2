@@ -1,8 +1,8 @@
 import copy
 from socket import socket
 from threading import Thread
-from hashlib import sha256, sha512
-from time import time, sleep
+from hashlib import sha256
+from time import time
 import os
 from datetime import datetime
 
@@ -29,19 +29,13 @@ class ThreadCliente(Thread):
         global diccionarioComprobacionesHashArchivos, estadisticasTransmision
         self.socket.recv(BUFFER_SIZE).decode()
         self.socket.send(str(self.id).encode())
-        sleep(0.1)
         self.socket.send(str(self.numeroConexiones).encode())
-        sleep(0.1)
         self.socket.send(nArchivo.encode())
-        sleep(0.1)
         self.socket.send(self.hashCode)
-        sleep(0.1)
         self.startEnvio = time()
         # Achivo en bytes
         self.socket.send(self.bytesArchivo)
-        sleep(0.1)
         self.socket.send('ArchivoEnviado'.encode())
-        sleep(0.1)
         estadisticasTransmision[self.id] = time() - self.startEnvio
         diccionarioComprobacionesHashArchivos[self.id] = self.socket.recv(BUFFER_SIZE).decode()
         self.socket.close()
