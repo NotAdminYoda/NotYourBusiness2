@@ -6,7 +6,7 @@ host = None
 port = None
 transfExitosa = None
 tiempoDeTransmision = None
-
+BUFFER_SIZE = 4096
 def recibirArchivoDelServidor(s, listo):
     global host, port, transfExitosa, tiempoDeTransmision
 
@@ -17,16 +17,16 @@ def recibirArchivoDelServidor(s, listo):
     print("Cliente listo para recibir, esperando a los demas clientes")
 
     # Se recibe el numero del cliente
-    numCliente = s.recv(1024).decode()
+    numCliente = s.recv(BUFFER_SIZE).decode()
 
     # Se recibe la cantidad de conexiones concurrentes
-    cantConexiones = s.recv(1024).decode()
+    cantConexiones = s.recv(BUFFER_SIZE).decode()
 
     # Se recibe el nombre del archivo
-    nombreArchivo = s.recv(1024).decode()
+    nombreArchivo = s.recv(BUFFER_SIZE).decode()
 
     # Se recibe el hash del archivo
-    hashRecibido = s.recv(1024)
+    hashRecibido = s.recv(BUFFER_SIZE)
 
     # Se abre el archivo donde se guardara el contenido recibido
     archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]), "wb")

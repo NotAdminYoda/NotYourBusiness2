@@ -5,11 +5,10 @@ from time import time, sleep
 import os
 from datetime import datetime
 
-
 numeroClientesProcesados = 0
 comprobacionesHash = {}
 estadisticasTransmision = {}
-
+BUFFER_SIZE = 4096
 
 class ThreadCliente(Thread):
     def __init__(self, id, socket, direccionCliente, numeroConexiones, nombreArchivo, bytesArchivo, hashArchivo):
@@ -22,13 +21,15 @@ class ThreadCliente(Thread):
         self.hashCode = None
         self.startEnvio = None
         self.bytesArchivo = bytesArchivo
-        self.hashArchivo = hashArchivo
+        hashCode = sha256()
+        hashCode.update(bytesArchivo)
+        self.hashArchivo = hashCode.digest()
         print(
             f"Cliente creado con id {id}, ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
 
     def run(self):
         global numeroClientesProcesados, comprobacionesHash, estadisticasTransmision
-        self.socket.recv(1024).decode()
+        self.socket.recv(BUFFER_SIZE).decode()
         numeroClientesProcesados += 1
         while numeroClientesProcesados < self.numeroConexiones:
             sleep(0.1)
@@ -39,7 +40,7 @@ class ThreadCliente(Thread):
         self.socket.send(nArchivo.encode())
         sleep(0.1)
         print(str(self.hashArchivo))
-        self.socket.send(self.hashArchivo.encode())
+        self.socket.send(self.hashArchivo)
         sleep(0.1)
         self.startEnvio = time()
 
@@ -49,7 +50,7 @@ class ThreadCliente(Thread):
         self.socket.send('ArchivoEnviado'.encode())
         sleep(0.1)
         estadisticasTransmision[self.id] = time() - self.startEnvio
-        answer = self.socket.recv(1024).decode()
+        answer = self.socket.recv(BUFFER_SIZE).decode()
         print(str(answer))
         answerHash = bool(answer)
         if answerHash:
@@ -108,16 +109,14 @@ print(
 arregloClientes = []
 arregloDirecciones = []
 
-hashCode = sha256()
-hashCode.update(bytesArchivo)
-hashBytes = hashCode.digest()
+
 
 for i in range(numeroDeClientes):
     socketCliente, direccionCliente = s.accept()
     print(
         f"Conexion del cliente con ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
     t = ThreadCliente(i, socketCliente, direccionCliente,
-                      numeroDeClientes, nArchivo, bytesArchivo, hashBytes)
+                      numeroDeClientes, nArchivo, bytesArchivo)
     arregloClientes.append(t)
     arregloDirecciones.append(direccionCliente)
 
