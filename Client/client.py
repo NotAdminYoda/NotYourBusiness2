@@ -9,11 +9,10 @@ BUFFER_SIZE = 1024
 
 
 class ThreadServidor(Thread):
-    def __init__(self, id, socket, ready):
+    def __init__(self, id, socket):
         Thread.__init__(self)
         self.id = id
         self.socket = socket
-        self.ready = ready
         self.numeroConexiones = ""
         self.nArchivo = ""
         self.hashCalculado = ""
@@ -22,9 +21,6 @@ class ThreadServidor(Thread):
         self.tiempoTotal = None
 
     def run(self):
-        #while not self.ready:
-         #   self.ready = input(
-          #      "Ingrese cualquier caracter cuando este listo para recibir: ")
         self.socket.send("ImReadyServer".encode())
         self.id = self.socket.recv(BUFFER_SIZE).decode()
         self.numeroConexiones = self.socket.recv(BUFFER_SIZE).decode()
@@ -98,7 +94,7 @@ for i in range(numeroDeClientes):
     sckt.connect((host, port))
     print(
         f"Conexion del cliente {i} al servidor con ip {host} y puerto {port}")
-    thread = ThreadServidor(i, sckt, '1')
+    thread = ThreadServidor(i, sckt)
     arregloClientes.append(thread)
 for thread in arregloClientes:
     thread.start()

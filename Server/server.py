@@ -6,7 +6,6 @@ from time import time, sleep
 import os
 from datetime import datetime
 
-numeroClientesProcesados = 0
 diccionarioComprobacionesHashArchivos = {}
 estadisticasTransmision = {}
 BUFFER_SIZE = 4096
@@ -27,11 +26,8 @@ class ThreadCliente(Thread):
             f"Cliente creado con id {id}, ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
 
     def run(self):
-        global numeroClientesProcesados, diccionarioComprobacionesHashArchivos, estadisticasTransmision
+        global diccionarioComprobacionesHashArchivos, estadisticasTransmision
         self.socket.recv(BUFFER_SIZE).decode()
-        numeroClientesProcesados += 1
-        #while numeroClientesProcesados < self.numeroConexiones:
-        #    sleep(0.1)
         self.socket.send(str(self.id).encode())
         sleep(0.1)
         self.socket.send(str(self.numeroConexiones).encode())
