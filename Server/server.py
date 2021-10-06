@@ -38,8 +38,8 @@ class ThreadCliente(Thread):
         sleep(0.1)
         self.socket.send(nArchivo.encode())
         sleep(0.1)
-        print(self.hashArchivo.hexdigest())
-        self.socket.send(self.hashArchivo.digest())
+        print(str(self.hashArchivo))
+        self.socket.send(self.hashArchivo)
         sleep(0.1)
         self.startEnvio = time()
 
@@ -108,7 +108,7 @@ print(
 arregloClientes = []
 arregloDirecciones = []
 
-hashCode = sha512()
+hashCode = sha256()
 hashCode.update(bytesArchivo)
 hashBytes = hashCode.digest()
 
@@ -117,7 +117,7 @@ for i in range(numeroDeClientes):
     print(
         f"Conexion del cliente con ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
     t = ThreadCliente(i, socketCliente, direccionCliente,
-                      numeroDeClientes, nArchivo, bytesArchivo, hashCode)
+                      numeroDeClientes, nArchivo, bytesArchivo, hashBytes)
     arregloClientes.append(t)
     arregloDirecciones.append(direccionCliente)
 
