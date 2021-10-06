@@ -1,6 +1,6 @@
 from socket import socket
 from threading import Thread
-from hashlib import sha512
+from hashlib import sha256
 from time import time, sleep
 import os
 from datetime import datetime
@@ -150,3 +150,4 @@ for i in range(numeroDeClientes):
                 f"Cliente {j}: {estadisticasTransmision[j]} segundos\n")
         file.write("\n")
         file.close()
+        s.close()

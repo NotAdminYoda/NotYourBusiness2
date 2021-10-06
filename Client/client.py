@@ -52,9 +52,9 @@ def recibirArchivoDelServidor(s, listo):
     archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]), "rb")
     hashCode.update(archivo.read())
     archivo.close()
-    print(hashCode.hexdigest())
+    print(str(hashCode.digest()))
     print(str(hashRecibido))
-    mensajeComprobacionHash = True if hashCode.digest() == hashRecibido else False
+    mensajeComprobacionHash = True if hashCode.digest() == str(hashRecibido) else False
     s.send(str(mensajeComprobacionHash).encode())
     if mensajeComprobacionHash:
         mensajeComprobacionHash = "Enviado Correctamente :D"
