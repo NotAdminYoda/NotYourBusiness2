@@ -1,6 +1,6 @@
 from socket import socket
 from threading import Thread
-from hashlib import sha1
+from hashlib import sha512
 from time import time, sleep
 import os
 from datetime import datetime
@@ -108,9 +108,9 @@ print(
 arregloClientes = []
 arregloDirecciones = []
 
-hashCode = sha1()
+hashCode = sha512()
 hashCode.update(bytesArchivo)
-#hashBytes = hashCode.digest()
+hashBytes = hashCode.digest()
 
 for i in range(numeroDeClientes):
     socketCliente, direccionCliente = s.accept()

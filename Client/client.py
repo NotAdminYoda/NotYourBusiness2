@@ -48,20 +48,19 @@ def recibirArchivoDelServidor(s, listo):
     archivo.close()
 
     # Se comprueba el hash recibido
-    hashCode = hashlib.sha1()
+    hashCode = hashlib.sha512()
     archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]), "rb")
     hashCode.update(archivo.read())
     archivo.close()
     print(hashCode.hexdigest())
     print(str(hashRecibido))
-    print(type(hashRecibido))
     mensajeComprobacionHash = True if hashCode.digest() == hashRecibido else False
-    print(mensajeComprobacionHash)
-
-    # Se envia el resultado de la comprobacion del hash
     s.send(str(mensajeComprobacionHash).encode())
-
-    # Se crea y se escribe el log
+    if mensajeComprobacionHash:
+        mensajeComprobacionHash = "Enviado Correctamente :D"
+    else:
+        mensajeComprobacionHash = "Error en la transferencia D:"
+    print(mensajeComprobacionHash)
     escribirLog(numCliente, nombreArchivo, cantConexiones, mensajeComprobacionHash, tiempoDeTransmision)
 
     s.close()
