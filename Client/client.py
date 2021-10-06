@@ -43,7 +43,7 @@ class ThreadServidor(Thread):
         file1.close()
         self.tiempoTotal = time() - self.startTime
         print(
-            f"Transmision y Escritura del archivo {self.nArchivo} Completada")
+            f"Transmision y Escritura del archivo {self.nArchivo} Completada para el cliente {self.id}")
         hashCode = sha256()
         file2 = open(
             f"ArchivosRecibidos/{date}-Cliente{self.id}-Prueba-{self.numeroConexiones}.txt", "rb")
