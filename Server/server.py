@@ -1,3 +1,4 @@
+import copy
 from socket import socket
 from threading import Thread
 from hashlib import sha512
@@ -40,13 +41,11 @@ class ThreadCliente(Thread):
         sleep(0.1)
         self.socket.send(nArchivo.encode())
         sleep(0.1)
-        #print(self.hashArchivo)
-        #self.socket.send(self.hashArchivo)
-        #sleep(0.1)
+        
         hashCode = sha512()
         hashCode.update(self.bytesArchivo)
         self.socket.send(hashCode.digest())
-        sleep(0.2)
+        sleep(0.1)
 
         self.startEnvio = time()
 
@@ -58,7 +57,8 @@ class ThreadCliente(Thread):
         estadisticasTransmision[self.id] = time() - self.startEnvio
         comprobacionesHash[self.id] = self.socket.recv(BUFFER_SIZE).decode()
         self.socket.close()
-        print(f"Finalizacion envio de archivo al Cliente {self.id} con IP {self.direccionCliente[0]} y puerto {self.direccionCliente[1]}")
+        print(
+            f"Finalizacion envio de archivo al Cliente {self.id} con IP {self.direccionCliente[0]} y puerto {self.direccionCliente[1]}")
 
 
 print("------- Programa Servidor TCP -------\n")
@@ -109,7 +109,6 @@ print(
 arregloClientes = []
 arregloDirecciones = []
 
-import copy
 for i in range(numeroDeClientes):
     socketCliente, direccionCliente = s.accept()
     print(

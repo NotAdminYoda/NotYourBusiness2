@@ -1,8 +1,7 @@
 import socket
-import threading
-import hashlib
-import time
-import os
+from threading import Thread
+from hashlib import sha256
+from time import time, sleep
 from datetime import datetime
 
 # Declaracion de atributos
@@ -10,9 +9,9 @@ host = None
 port = None
 transfExitosa = None
 tiempoDeTransmision = None
-BUFFER_SIZE = 1024
 
 
+class ThreadServidor(Thread)
 def recibirArchivoDelServidor(s, listo):
     global host, port, transfExitosa, tiempoDeTransmision
 
@@ -24,29 +23,31 @@ def recibirArchivoDelServidor(s, listo):
     print("Cliente listo para recibir, esperando a los demas clientes")
 
     # Se recibe el numero del cliente
-    numCliente = s.recv(BUFFER_SIZE).decode()
+    numCliente = s.recv(1024).decode()
 
     # Se recibe la cantidad de conexiones concurrentes
-    cantConexiones = s.recv(BUFFER_SIZE).decode()
+    cantConexiones = s.recv(1024).decode()
 
     # Se recibe el nombre del archivo
-    nombreArchivo = s.recv(BUFFER_SIZE).decode()
+    nombreArchivo = s.recv(1024).decode()
 
     # Se recibe el hash del archivo
-    hashRecibido = s.recv(BUFFER_SIZE)
+    hashRecibido = s.recv(1024)
 
     # Se abre el archivo donde se guardara el contenido recibido
     archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente,
-                                                                     cantConexiones, nombreArchivo.split(".")[-1]), "wb")
+                   cantConexiones, nombreArchivo.split(".")[-1]), "wb")
 
     print("Transmision iniciada, recibiendo archivo desde el servidor...")
     inicioTransmision = time.time()
 
     # Se recibe y se escribe el contenido del archivo
     recibido = s.recv(65536)
+    i = 0
     while not str(recibido).endswith('ArchivoEnviado\''):
         archivo.write(recibido)
-        #print("Cliente {}: Parte {} recibida".format(numCliente,i))
+        i += 1
+        print("Cliente {}: Parte {} recibida".format(numCliente, i))
         recibido = s.recv(65536)
     archivo.write(recibido[:-3])
 
@@ -56,15 +57,21 @@ def recibirArchivoDelServidor(s, listo):
     archivo.close()
 
     # Se comprueba el hash recibido
-    hashCode = hashlib.sha512()
-    archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]), "rb")
+    hashCode = sha256()
+    archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente,
+                   cantConexiones, nombreArchivo.split(".")[-1]), "rb")
     hashCode.update(archivo.read())
     archivo.close()
-    print("CALCULADO",hashCode.digest())
-    print("RECIBIDO",hashRecibido)
-    mensajeComprobacionHash = "La entrega del archivo fue exitosa" if hashCode.digest() == hashRecibido else "La entrega del archivo NO fue exitosa"
+    mensajeComprobacionHash = "La entrega del archivo fue exitosa" if hashCode.digest(
+    ) == hashRecibido else "La entrega del archivo NO fue exitosa"
+    print(f"Hash Calculado {hashCode.hexdigest()}")
+    print(f"Hash Recibido {hashRecibido.hex()}")
     print(mensajeComprobacionHash)
+
+    # Se envia el resultado de la comprobacion del hash
     s.send(mensajeComprobacionHash.encode())
+
+    # Se crea y se escribe el log
     escribirLog(numCliente, nombreArchivo, cantConexiones,
                 mensajeComprobacionHash, tiempoDeTransmision)
 
@@ -97,42 +104,32 @@ def escribirLog(numCliente, nombreArchivo, cantConexiones, mensajeComprobacionHa
     archivo.close()
 
 
-if __name__ == "__main__":
-    try:
-        # Se establece la cantidad de clientes que se van a crear
-        cantThreads = int(input("Ingrese la cantidad de clientes a crear: "))
-        if cantThreads < 1:
-            raise ValueError("[Error] El numero debe ser mayor a 0")
+print("\n\n----- Programa Cliente Servidor TCP -----\n\n")
+numeroDeClientes = ""
+while True:
+    numeroDeClientes = input("Numero de clientes (Threads): ")
+    if numeroDeClientes.isnumeric():
+        numeroDeClientes = int(numeroDeClientes)
+        if numeroDeClientes <= 0 or numeroDeClientes > 25:
+            print("Seleccione una opción valida")
+        else:
+            break
+    else:
+        print("Seleccione una opción valida")
 
-        # Se crea la carpeta para guardar los archivos (si no existe)
-        if not os.path.isdir('ArchivosRecibidos'):
-            os.mkdir(os.path.join(os.getcwd(), "ArchivosRecibidos"))
-
-        # Se crea la carpeta para guardar los logs (si no existe)
-        if not os.path.isdir('Logs'):
-            os.mkdir(os.path.join(os.getcwd(), "Logs"))
-
-        # Se crean los threads de los clientes
-        #host = input("Ingrese la direccion IP del servidor (esta fue indicada en la terminal donde se ejecuto el servidor): ")
-        host = '192.168.10.20'
-        port = 8000
-        threads = []
-
-        for i in range(cantThreads):
-            s = socket.socket()
-            s.connect((host, port))
-            print("Conexion establecida (Thread {}).".format(i+1))
-            thread = threading.Thread(
-                target=recibirArchivoDelServidor, args=(s, '1'))
-            threads.append(thread)
-
-        for thread in threads:
-            thread.start()
-
-        for thread in threads:
-            thread.join()
-
-        time.sleep(2)
-
-    except (ValueError, ConnectionResetError) as e:
-        print("\n", e, sep="")
+#host = input("Ingres IP del Servidor TCP: ")
+host = '192.168.10.20'
+port = 8000
+arregloClientes = []
+for i in range(numeroDeClientes):
+        s = socket.socket()
+        s.connect((host, port))
+        print("Conexion establecida (Thread {}).".format(i+1))
+        thread = Thread(
+        target=recibirArchivoDelServidor, args=(s, '1'))
+        arregloClientes.append(thread)
+for thread in arregloClientes:
+        thread.start()
+for thread in arregloClientes:
+        thread.join()
+time.sleep(2)
