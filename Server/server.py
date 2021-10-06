@@ -1,6 +1,6 @@
 from socket import socket
 from threading import Thread
-from hashlib import sha256
+from hashlib import sha512
 from time import time, sleep
 import os
 from datetime import datetime
@@ -22,7 +22,7 @@ class ThreadCliente(Thread):
         self.hashCode = None
         self.startEnvio = None
         self.bytesArchivo = bytesArchivo
-        hashCode = sha256()
+        hashCode = sha512()
         hashCode.update(bytesArchivo)
         self.hashArchivo = hashCode.digest()
         print(

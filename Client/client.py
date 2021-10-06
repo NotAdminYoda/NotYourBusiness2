@@ -56,7 +56,7 @@ def recibirArchivoDelServidor(s, listo):
     archivo.close()
 
     # Se comprueba el hash recibido
-    hashCode = hashlib.sha256()
+    hashCode = hashlib.sha512()
     archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente,
                                                                      cantConexiones, nombreArchivo.split(".")[-1]), "rb")
     hashCode.update(archivo.read())
