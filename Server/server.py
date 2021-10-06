@@ -49,7 +49,9 @@ class ThreadCliente(Thread):
         self.socket.send('ArchivoEnviado'.encode())
         sleep(0.1)
         estadisticasTransmision[self.id] = time() - self.startEnvio
-        answerHash = bool(self.socket.recv(1024).decode())
+        answer = self.socket.recv(1024).decode()
+        print(str(answer))
+        answerHash = bool(answer)
         if answerHash:
             comprobacionesHash[self.id] = "Enviado Correctamente :D"
         else:

@@ -50,11 +50,13 @@ def recibirArchivoDelServidor(s, listo):
     archivo.close()
 
     # Se comprueba el hash recibido
-    hashCode = hashlib.sha512()
+    hashCode = hashlib.sha256()
     archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]), "rb")
     hashCode.update(archivo.read())
     archivo.close()
     print(hashCode.hexdigest())
+    print(str(hashRecibido))
+    print(type(hashRecibido))
     mensajeComprobacionHash = True if hashCode.digest() == hashRecibido else False
     print(mensajeComprobacionHash)
 
@@ -102,7 +104,8 @@ if __name__ == "__main__":
             os.mkdir(os.path.join(os.getcwd(), "Logs"))
 
         # Se crean los threads de los clientes
-        host = input("Ingrese la direccion IP del servidor (esta fue indicada en la terminal donde se ejecuto el servidor): ")
+        #host = input("Ingrese la direccion IP del servidor (esta fue indicada en la terminal donde se ejecuto el servidor): ")
+        host = '192.168.10.19'
         port = 8000
         threads = []
 
