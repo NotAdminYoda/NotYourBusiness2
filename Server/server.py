@@ -67,21 +67,21 @@ class ThreadCliente(Thread):
 
 
 print("------- Programa Servidor TCP -------\n")
-print("Recuerda ejecutar el comando 'truncate -s 100M 100MB.test'")
-print("Recuerda ejecutar el comando 'truncate -s 250M 250MB.test'")
+print("Recuerda ejecutar el comando 'truncate -s 100M 100MB.txt'")
+print("Recuerda ejecutar el comando 'truncate -s 250M 250MB.txt'")
 nArchivo = ""
 while True:
     print("Presione 1 para el archivo de 100MB o 2 para el archivo de 250MB")
     entrada = input()
     if entrada.isnumeric():
         if entrada == '1':
-            nArchivo = 'ArchivosAEnviar/100MB.test'
+            nArchivo = 'ArchivosAEnviar/100MB.txt'
             break
         elif entrada == '2':
-            nArchivo = 'ArchivosAEnviar/250MB.test'
+            nArchivo = 'ArchivosAEnviar/250MB.txt'
             break
         else:
-            print("Seleccione una opcion valida. Recuerde ejecutar el comando \n $'truncate -s 100M 100MB.test' o \n $'truncate -s 250M 250MB.test' para que funcione.")
+            print("Seleccione una opcion valida. Recuerde ejecutar el comando \n $'truncate -s 100M 100MB.txt' o \n $'truncate -s 250M 250MB.txt' para que funcione.")
     else:
         print("Seleccione una opcion valida")
 
