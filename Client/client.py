@@ -10,7 +10,7 @@ host = None
 port = None
 transfExitosa = None
 tiempoDeTransmision = None
-BUFFER_SIZE = 4096
+BUFFER_SIZE = 1024
 
 
 def recibirArchivoDelServidor(s, listo):
@@ -57,18 +57,14 @@ def recibirArchivoDelServidor(s, listo):
 
     # Se comprueba el hash recibido
     hashCode = hashlib.sha512()
-    archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente,
-                                                                     cantConexiones, nombreArchivo.split(".")[-1]), "rb")
+    archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]), "rb")
     hashCode.update(archivo.read())
     archivo.close()
     print("CALCULADO",hashCode.digest())
     print("RECIBIDO",hashRecibido)
-    mensajeComprobacionHash = str(hashCode.digest) if str(
-        hashCode.digest()) == str(hashRecibido) else "Error en la transferencia D:"
-    s.send(mensajeComprobacionHash.encode())
-    if mensajeComprobacionHash != "Error en la transferencia D:":
-        mensajeComprobacionHash = "Enviado Correctamente :D"
+    mensajeComprobacionHash = "La entrega del archivo fue exitosa" if hashCode.digest() == hashRecibido else "La entrega del archivo NO fue exitosa"
     print(mensajeComprobacionHash)
+    s.send(mensajeComprobacionHash.encode())
     escribirLog(numCliente, nombreArchivo, cantConexiones,
                 mensajeComprobacionHash, tiempoDeTransmision)
 
@@ -118,7 +114,7 @@ if __name__ == "__main__":
 
         # Se crean los threads de los clientes
         #host = input("Ingrese la direccion IP del servidor (esta fue indicada en la terminal donde se ejecuto el servidor): ")
-        host = '192.168.10.19'
+        host = '192.168.10.20'
         port = 8000
         threads = []
 

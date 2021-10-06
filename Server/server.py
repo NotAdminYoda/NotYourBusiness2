@@ -46,7 +46,8 @@ class ThreadCliente(Thread):
         hashCode = sha512()
         hashCode.update(self.bytesArchivo)
         self.socket.send(hashCode.digest())
-        sleep(0.1)
+        sleep(0.2)
+
         self.startEnvio = time()
 
         # Achivo en bytes
@@ -55,15 +56,9 @@ class ThreadCliente(Thread):
         self.socket.send('ArchivoEnviado'.encode())
         sleep(0.1)
         estadisticasTransmision[self.id] = time() - self.startEnvio
-        answer = self.socket.recv(BUFFER_SIZE).decode()
-        print(answer)
-        if answer == self.hashCode:
-            comprobacionesHash[self.id] = "Enviado Correctamente :D"
-        else:
-            comprobacionesHash[self.id] = "Error en la transferencia D:"
+        comprobacionesHash[self.id] = self.socket.recv(BUFFER_SIZE).decode()
         self.socket.close()
-        print(
-            f"Finalizacion envio de archivo al Cliente {self.id} con IP {self.direccionCliente[0]} y puerto {self.direccionCliente[1]}")
+        print(f"Finalizacion envio de archivo al Cliente {self.id} con IP {self.direccionCliente[0]} y puerto {self.direccionCliente[1]}")
 
 
 print("------- Programa Servidor TCP -------\n")
@@ -114,13 +109,13 @@ print(
 arregloClientes = []
 arregloDirecciones = []
 
-
+import copy
 for i in range(numeroDeClientes):
     socketCliente, direccionCliente = s.accept()
     print(
         f"Conexion del cliente con ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
     t = ThreadCliente(i, socketCliente, direccionCliente,
-                      numeroDeClientes, nArchivo, bytesArchivo)
+                      numeroDeClientes, nArchivo, copy.copy(bytesArchivo))
     arregloClientes.append(t)
     arregloDirecciones.append(direccionCliente)
 
