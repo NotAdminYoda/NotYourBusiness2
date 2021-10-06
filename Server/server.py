@@ -125,7 +125,7 @@ for i in range(numeroDeClientes):
         file.write(
             "\nIdentificacion por conexión del cliente al que se realiza la transferencia de archivos:\n")
         for j in range(numeroDeClientes):
-            file.write(f"Cliente {j}: {diccionarioDireccionesClientes[j]}\n")
+            file.write(f"Cliente {j} con IP {diccionarioComprobacionesHashArchivos[j][0]} y puerto {diccionarioComprobacionesHashArchivos[j][1]}\n")
         file.write("\n")
         file.write("Resultados de la transferencia:\n")
         for j in range(numeroDeClientes):
