@@ -22,9 +22,9 @@ class ThreadServidor(Thread):
         self.tiempoTotal = None
 
     def run(self):
-        while not self.ready:
-            self.ready = input(
-                "Ingrese cualquier caracter cuando este listo para recibir: ")
+        #while not self.ready:
+         #   self.ready = input(
+          #      "Ingrese cualquier caracter cuando este listo para recibir: ")
         self.socket.send("ImReadyServer".encode())
         self.id = self.socket.recv(BUFFER_SIZE).decode()
         self.numeroConexiones = self.socket.recv(BUFFER_SIZE).decode()

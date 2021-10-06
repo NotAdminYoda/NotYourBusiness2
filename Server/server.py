@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 
 numeroClientesProcesados = 0
-comprobacionesHash = {}
+diccionarioComprobacionesHashArchivos = {}
 estadisticasTransmision = {}
 BUFFER_SIZE = 4096
 
@@ -27,11 +27,11 @@ class ThreadCliente(Thread):
             f"Cliente creado con id {id}, ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
 
     def run(self):
-        global numeroClientesProcesados, comprobacionesHash, estadisticasTransmision
+        global numeroClientesProcesados, diccionarioComprobacionesHashArchivos, estadisticasTransmision
         self.socket.recv(BUFFER_SIZE).decode()
         numeroClientesProcesados += 1
-        while numeroClientesProcesados < self.numeroConexiones:
-            sleep(0.1)
+        #while numeroClientesProcesados < self.numeroConexiones:
+        #    sleep(0.1)
         self.socket.send(str(self.id).encode())
         sleep(0.1)
         self.socket.send(str(self.numeroConexiones).encode())
@@ -47,7 +47,7 @@ class ThreadCliente(Thread):
         self.socket.send('ArchivoEnviado'.encode())
         sleep(0.1)
         estadisticasTransmision[self.id] = time() - self.startEnvio
-        comprobacionesHash[self.id] = self.socket.recv(BUFFER_SIZE).decode()
+        diccionarioComprobacionesHashArchivos[self.id] = self.socket.recv(BUFFER_SIZE).decode()
         self.socket.close()
         print(
             f"Finalizacion envio de archivo al Cliente {self.id} con IP {self.direccionCliente[0]} y puerto {self.direccionCliente[1]}")
@@ -102,7 +102,7 @@ print(
 
 
 arregloClientes = []
-arregloDirecciones = []
+diccionarioDireccionesClientes = []
 
 for i in range(numeroDeClientes):
     socketCliente, direccionCliente = s.accept()
@@ -111,7 +111,7 @@ for i in range(numeroDeClientes):
     t = ThreadCliente(i, socketCliente, direccionCliente,
                       numeroDeClientes, nArchivo, copy.copy(bytesArchivo), hashBytes)
     arregloClientes.append(t)
-    arregloDirecciones.append(direccionCliente)
+    diccionarioDireccionesClientes.append(direccionCliente)
 
     if len(arregloClientes) == numeroDeClientes:
         for t in arregloClientes:
@@ -127,13 +127,13 @@ for i in range(numeroDeClientes):
         file.write(
             f"Archivo enviado: {nArchivo} - Tamanio en Bytes: {tamanioArchivo}")
         file.write(
-            "Identificacion por conexión del cliente al que se realiza la transferencia de archivos:\n")
+            "\nIdentificacion por conexión del cliente al que se realiza la transferencia de archivos:\n")
         for j in range(numeroDeClientes):
-            file.write(f"Cliente {j}: {arregloDirecciones[j]}\n")
+            file.write(f"Cliente {j}: {diccionarioDireccionesClientes[j]}\n")
         file.write("\n")
         file.write("Resultados de la transferencia:\n")
         for j in range(numeroDeClientes):
-            file.write(f"Cliente {j}: {comprobacionesHash[j]}\n")
+            file.write(f"Cliente {j}: {diccionarioComprobacionesHashArchivos[j]}\n")
         file.write("\n")
 
         file.write("Tiempos de transmision:\n")
