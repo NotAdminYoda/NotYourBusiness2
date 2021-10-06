@@ -98,7 +98,7 @@ print(
 
 
 arregloClientes = []
-diccionarioDireccionesClientes = []
+arregloDirecciones = []
 
 for i in range(numeroDeClientes):
     socketCliente, direccionCliente = s.accept()
@@ -107,7 +107,7 @@ for i in range(numeroDeClientes):
     t = ThreadCliente(i, socketCliente, direccionCliente,
                       numeroDeClientes, nArchivo, copy.copy(bytesArchivo), hashBytes)
     arregloClientes.append(t)
-    diccionarioDireccionesClientes.append(direccionCliente)
+    arregloDirecciones.append(direccionCliente)
 
     if len(arregloClientes) == numeroDeClientes:
         for t in arregloClientes:
@@ -125,7 +125,7 @@ for i in range(numeroDeClientes):
         file.write(
             "\nIdentificacion por conexión del cliente al que se realiza la transferencia de archivos:\n")
         for j in range(numeroDeClientes):
-            file.write(f"Cliente {j} con IP {diccionarioComprobacionesHashArchivos[j][0]} y puerto {diccionarioComprobacionesHashArchivos[j][1]}\n")
+            file.write(f"Cliente {j} con IP {arregloDirecciones[j][0]} y puerto {arregloDirecciones[j][1]}\n")
         file.write("\n")
         file.write("Resultados de la transferencia:\n")
         for j in range(numeroDeClientes):
