@@ -1,6 +1,6 @@
 from socket import socket
 from threading import Thread
-from hashlib import sha256
+from hashlib import sha1
 from time import time, sleep
 import os
 from datetime import datetime
@@ -57,7 +57,7 @@ class ThreadCliente(Thread):
         else:
             comprobacionesHash[self.id] = "Error en la transferencia D:"
         self.socket.close()
-        print(f"Enviado Correctamente al Cliente {self.id} con IP {self.direccionCliente[0]} y puerto {self.direccionCliente[1]}")
+        print(f"Finalizacion envio de archivo al Cliente {self.id} con IP {self.direccionCliente[0]} y puerto {self.direccionCliente[1]}")
 
 
 print("------- Programa Servidor TCP -------\n")
@@ -108,7 +108,7 @@ print(
 arregloClientes = []
 arregloDirecciones = []
 
-hashCode = sha256()
+hashCode = sha1()
 hashCode.update(bytesArchivo)
 #hashBytes = hashCode.digest()
 

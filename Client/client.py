@@ -36,11 +36,9 @@ def recibirArchivoDelServidor(s, listo):
 
     # Se recibe y se escribe el contenido del archivo
     recibido = s.recv(65536)
-    i = 0
     while not str(recibido).endswith('ArchivoEnviado\''):
         archivo.write(recibido)
-        i+=1
-        print("Cliente {}: Parte {} recibida".format(numCliente,i))
+        #print("Cliente {}: Parte {} recibida".format(numCliente,i))
         recibido = s.recv(65536)
     archivo.write(recibido[:-3])
 
@@ -50,7 +48,7 @@ def recibirArchivoDelServidor(s, listo):
     archivo.close()
 
     # Se comprueba el hash recibido
-    hashCode = hashlib.sha256()
+    hashCode = hashlib.sha1()
     archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]), "rb")
     hashCode.update(archivo.read())
     archivo.close()
