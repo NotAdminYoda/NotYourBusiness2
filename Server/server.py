@@ -97,7 +97,8 @@ host = '0.0.0.0'
 port = 8000
 s.bind((host, port))
 s.listen(5)
-print(f"Servidor corriendo en el puerto {port} (Recuerde encontar la IP usando el comando ifconfig\n")
+print(
+    f"Servidor corriendo en el puerto {port} (Recuerde encontar la IP usando el comando ifconfig\n")
 
 
 arregloClientes = []

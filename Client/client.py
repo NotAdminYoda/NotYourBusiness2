@@ -1,14 +1,16 @@
+from genericpath import getsize
 from socket import socket
 from threading import Thread
 from hashlib import sha256
 from time import time
 from datetime import datetime
-import os
+from os import path
 BUFFER_SIZE = 1024
 
 
 class ThreadServidor(Thread):
     def __init__(self, id, socket, ready):
+        Thread.__init__(self)
         self.id = id
         self.socket = socket
         self.ready = ready
@@ -28,30 +30,32 @@ class ThreadServidor(Thread):
         self.numeroConexiones = self.socket.recv(BUFFER_SIZE).decode()
         self.nArchivo = self.socket.recv(BUFFER_SIZE).decode()
         self.hashServidor = self.socket.recv(BUFFER_SIZE)
-        file = open(
-            f"ArchivosRecibidos/Cliente{self.id}-Prueba-{self.numeroConexiones}.txt", "wb")
+        date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        file1 = open(
+            f"ArchivosRecibidos/{date}-Cliente{self.id}-Prueba-{self.numeroConexiones}.txt", "wb")
         print(f"Recibiendo archivo de Cliente {self.id}...")
         self.startTime = time()
-        response = ""
+        response = self.socket.recv(BUFFER_SIZE*64)
         while True:
-            chunk = self.socket.recv(BUFFER_SIZE*128)
-            if len(chunk) == 0 or "ArchivoEnviado" in response:
-                break
+            if 'ArchivoEnviado\'' not in str(response):
+                file1.write(response)
+                response = self.socket.recv(BUFFER_SIZE*64)
             else:
-                response += chunk
-        response = response.replace("ArchivoEnviado\\", '')
+                break
+
+        file1.write(response[:-14])
+        file1.close()
         self.tiempoTotal = time() - self.startTime
-        file.write(response)
-        print(f"Transmision y Escritura del archivo {self.nArchivo} Completa")
-        file.close()
+        print(
+            f"Transmision y Escritura del archivo {self.nArchivo} Completada")
         hashCode = sha256()
-        file = open(
-            f"ArchivosRecibidos/Cliente{self.id}-Prueba-{self.numeroConexiones}.txt", "rb")
-        hashCode.update(file.read())
-        file.close()
-        mensajeComprobacionHash = "La integridad del archivo es correcta" if hashCode.digest(
-        ) == self.hashServidor else "La integridad del archivo no es correcta"
-        print(f"Hash Calculado {self.hashCalculado.hexdigest()}")
+        file2 = open(
+            f"ArchivosRecibidos/{date}-Cliente{self.id}-Prueba-{self.numeroConexiones}.txt", "rb")
+        hashCode.update(file2.read())
+        file2.close()
+        self.hashCalculado = hashCode.digest()
+        mensajeComprobacionHash = "La integridad del archivo es correcta" if self.hashCalculado == self.hashServidor else "La integridad del archivo no es correcta"
+        print(f"Hash Calculado {self.hashCalculado.hex()}")
         print(f"Hash Recibido {self.hashServidor.hex()}")
         if mensajeComprobacionHash == "La integridad del archivo es correcta":
             print(
@@ -61,16 +65,15 @@ class ThreadServidor(Thread):
                 f"El archivo {self.nArchivo} del cliente {self.id} tiene comprobacion de integridad incorrecta.")
 
         self.socket.send(mensajeComprobacionHash.encode())
-
-        date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        file = open(f"Logs/{date} Cliente{self.id}.txt", "w")
-        file.write(f"Archivo Recibido: {self.nArchivo.split('/')[1]}\n")
-        tamanioArchivo = os.path.getsize(f"ArchivosRecibidos/Cliente{self.id}-Prueba{self.numeroConexiones}.txt")
-        file.write(f"Tamanio archivo recibido: {tamanioArchivo} bytes\n")
-        file.write(f"Servidor con ip {host} y puerto {port}\n")
-        file.write(f"Integridad del archivo: {mensajeComprobacionHash}\n")
-        file.write(f"Tiempo de transmision: {self.tiempoTotal} segundos\n")
-        file.close()
+        file3 = open(f"Logs/{date} Cliente{self.id}.txt", "w")
+        file3.write(f"Archivo Recibido: {self.nArchivo.split('/')[1]}\n")
+        tamanioArchivo = path.getsize(
+            f"ArchivosRecibidos/{date}-Cliente{self.id}-Prueba-{self.numeroConexiones}.txt")
+        file3.write(f"Tamanio archivo recibido: {tamanioArchivo} bytes\n")
+        file3.write(f"Servidor con ip {host} y puerto {port}\n")
+        file3.write(f"Integridad del archivo: {mensajeComprobacionHash}\n")
+        file3.write(f"Tiempo de transmision: {self.tiempoTotal} segundos\n")
+        file3.close()
         self.socket.close()
 
 
