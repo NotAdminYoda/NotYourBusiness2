@@ -1,4 +1,8 @@
-import socket, threading, hashlib, time, os
+import socket
+import threading
+import hashlib
+import time
+import os
 from datetime import datetime
 
 # Declaracion de atributos
@@ -7,12 +11,15 @@ port = None
 transfExitosa = None
 tiempoDeTransmision = None
 BUFFER_SIZE = 4096
+
+
 def recibirArchivoDelServidor(s, listo):
     global host, port, transfExitosa, tiempoDeTransmision
 
     # Se envía la confirmacion de "listo"
     while not listo:
-        listo = input("Ingrese cualquier caracter cuando este listo para recibir: ")
+        listo = input(
+            "Ingrese cualquier caracter cuando este listo para recibir: ")
     s.send(b"Listo")
     print("Cliente listo para recibir, esperando a los demas clientes")
 
@@ -29,7 +36,8 @@ def recibirArchivoDelServidor(s, listo):
     hashRecibido = s.recv(BUFFER_SIZE)
 
     # Se abre el archivo donde se guardara el contenido recibido
-    archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]), "wb")
+    archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente,
+                                                                     cantConexiones, nombreArchivo.split(".")[-1]), "wb")
 
     print("Transmision iniciada, recibiendo archivo desde el servidor...")
     inicioTransmision = time.time()
@@ -49,41 +57,49 @@ def recibirArchivoDelServidor(s, listo):
 
     # Se comprueba el hash recibido
     hashCode = hashlib.sha256()
-    archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]), "rb")
+    archivo = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente,
+                                                                     cantConexiones, nombreArchivo.split(".")[-1]), "rb")
     hashCode.update(archivo.read())
     archivo.close()
-    print(str(hashCode.digest()))
-    print(str(hashRecibido))
-    mensajeComprobacionHash = True if str(hashCode.digest()) == str(hashRecibido) else False
-    s.send(str(mensajeComprobacionHash).encode())
-    if mensajeComprobacionHash:
+    print(hashCode.digest())
+    print(hashRecibido)
+    mensajeComprobacionHash = str(hashCode.digest) if str(
+        hashCode.digest()) == str(hashRecibido) else "Error en la transferencia D:"
+    s.send(mensajeComprobacionHash.encode())
+    if mensajeComprobacionHash != "Error en la transferencia D:":
         mensajeComprobacionHash = "Enviado Correctamente :D"
-    else:
-        mensajeComprobacionHash = "Error en la transferencia D:"
     print(mensajeComprobacionHash)
-    escribirLog(numCliente, nombreArchivo, cantConexiones, mensajeComprobacionHash, tiempoDeTransmision)
+    escribirLog(numCliente, nombreArchivo, cantConexiones,
+                mensajeComprobacionHash, tiempoDeTransmision)
 
     s.close()
+
 
 def escribirLog(numCliente, nombreArchivo, cantConexiones, mensajeComprobacionHash, tiempoDeTransmision):
     # a.
     fechaStr = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    archivo = open("Logs/{} (Cliente {}).txt".format(fechaStr, numCliente), "w")
+    archivo = open(
+        "Logs/{} (Cliente {}).txt".format(fechaStr, numCliente), "w")
 
     # b.
     archivo.write("Nombre del archivo recibido: {}\n".format(nombreArchivo))
-    archivo.write("Tamano del archivo recibido: {} bytes\n\n".format(os.path.getsize("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]))))
+    archivo.write("Tamano del archivo recibido: {} bytes\n\n".format(os.path.getsize(
+        "ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]))))
 
     # c.
-    archivo.write("Servidor desde el que se realizo la transferencia: ({}, {})\n\n".format(host, port))
+    archivo.write(
+        "Servidor desde el que se realizo la transferencia: ({}, {})\n\n".format(host, port))
 
     # d.
-    archivo.write("Resultado de la transferencia: {}\n\n".format(mensajeComprobacionHash))
+    archivo.write("Resultado de la transferencia: {}\n\n".format(
+        mensajeComprobacionHash))
 
     # e.
-    archivo.write("Tiempo de transmision: {:.2f} segundos\n".format(tiempoDeTransmision))
+    archivo.write("Tiempo de transmision: {:.2f} segundos\n".format(
+        tiempoDeTransmision))
 
     archivo.close()
+
 
 if __name__ == "__main__":
     try:
@@ -110,7 +126,8 @@ if __name__ == "__main__":
             s = socket.socket()
             s.connect((host, port))
             print("Conexion establecida (Thread {}).".format(i+1))
-            thread = threading.Thread(target=recibirArchivoDelServidor, args=(s, '1'))
+            thread = threading.Thread(
+                target=recibirArchivoDelServidor, args=(s, '1'))
             threads.append(thread)
 
         for thread in threads:

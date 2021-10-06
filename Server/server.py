@@ -10,8 +10,9 @@ comprobacionesHash = {}
 estadisticasTransmision = {}
 BUFFER_SIZE = 4096
 
+
 class ThreadCliente(Thread):
-    def __init__(self, id, socket, direccionCliente, numeroConexiones, nombreArchivo, bytesArchivo, hashArchivo):
+    def __init__(self, id, socket, direccionCliente, numeroConexiones, nombreArchivo, bytesArchivo):
         Thread.__init__(self)
         self.id = id
         self.socket = socket
@@ -39,7 +40,7 @@ class ThreadCliente(Thread):
         sleep(0.1)
         self.socket.send(nArchivo.encode())
         sleep(0.1)
-        print(str(self.hashArchivo))
+        print(self.hashArchivo)
         self.socket.send(self.hashArchivo)
         sleep(0.1)
         self.startEnvio = time()
@@ -51,14 +52,14 @@ class ThreadCliente(Thread):
         sleep(0.1)
         estadisticasTransmision[self.id] = time() - self.startEnvio
         answer = self.socket.recv(BUFFER_SIZE).decode()
-        print(str(answer))
-        answerHash = bool(answer)
-        if answerHash:
+        print(answer)
+        if answer == self.hashCode:
             comprobacionesHash[self.id] = "Enviado Correctamente :D"
         else:
             comprobacionesHash[self.id] = "Error en la transferencia D:"
         self.socket.close()
-        print(f"Finalizacion envio de archivo al Cliente {self.id} con IP {self.direccionCliente[0]} y puerto {self.direccionCliente[1]}")
+        print(
+            f"Finalizacion envio de archivo al Cliente {self.id} con IP {self.direccionCliente[0]} y puerto {self.direccionCliente[1]}")
 
 
 print("------- Programa Servidor TCP -------\n")
@@ -108,7 +109,6 @@ print(
 
 arregloClientes = []
 arregloDirecciones = []
-
 
 
 for i in range(numeroDeClientes):
