@@ -121,7 +121,7 @@ for i in range(numeroDeClientes):
 
         # Log
         date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        file = open("Logs/{}.txt".format(date), "w")
+        file = open(f"Logs/{date}.txt", "w")
         tamanioArchivo = os.path.getsize(f"{nArchivo}")
         file.write(
             f"Archivo enviado: {nArchivo} - Tamanio en Bytes: {tamanioArchivo}")

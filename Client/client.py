@@ -15,6 +15,8 @@ class ThreadServidor(Thread):
         self.nArchivo = ""
         self.hashCalculado = ""
         self.hashServidor = ""
+        self.startTime = None
+        self.tiempoTotal = None
     
     def run(self):
         while not self.ready:
@@ -26,7 +28,7 @@ class ThreadServidor(Thread):
         self.hashServidor = self.socket.recv(BUFFER_SIZE)
         file = open(f"ArchivosRecibidos/Cliente{self.id}-Prueba-{self.numeroConexiones}.txt", "wb")
         print(f"Recibiendo archivo de Cliente {self.id}...")
-        start = time()
+        self.startTime = time()
         response = ""
         while True:
             chunk = self.socket.recv(BUFFER_SIZE*128)
@@ -34,65 +36,48 @@ class ThreadServidor(Thread):
                 break
             else:
                 response += chunk
+        response = response.replace("ArchivoEnviado\\", '')
+        self.tiempoTotal = time() - self.startTime
         file.write(response)
-        confirmacion = self.socket.recv(65536)
-        file.write(confirmacion[:-3])
-
-        tiempoDeTransmision = time.time() - start
-        print("Transmision completa. Archivo recibido.")
-
+        print(f"Transmision y Escritura del archivo {self.nArchivo} Completa")
         file.close()
-
-        # Se comprueba el hash recibido
         hashCode = sha256()
-        file = open("ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente,
-                    cantConexiones, nombreArchivo.split(".")[-1]), "rb")
+        file = open(f"ArchivosRecibidos/Cliente{self.id}-Prueba-{self.numeroConexiones}.txt", "rb")
         hashCode.update(file.read())
         file.close()
-        mensajeComprobacionHash = "La entrega del archivo fue exitosa" if hashCode.digest(
-        ) == hashRecibido else "La entrega del archivo NO fue exitosa"
-        print(f"Hash Calculado {hashCode.hexdigest()}")
-        print(f"Hash Recibido {hashRecibido.hex()}")
-        print(mensajeComprobacionHash)
+        mensajeComprobacionHash = "La integridad del archivo es correcta" if hashCode.digest() == self.hashServidor else "La integridad del archivo no es correcta"
+        print(f"Hash Calculado {self.hashCalculado.hexdigest()}")
+        print(f"Hash Recibido {self.hashServidor.hex()}")
+        if mensajeComprobacionHash == "La integridad del archivo es correcta":
+            print(f"El archivo {self.nArchivo} del cliente {self.id} tiene comprobacion de integridad correcta.")
+        else:
+            print(f"El archivo {self.nArchivo} del cliente {self.id} tiene comprobacion de integridad incorrecta.")
 
-        # Se envia el resultado de la comprobacion del hash
-        s.send(mensajeComprobacionHash.encode())
+        self.socket.send(mensajeComprobacionHash.encode())
 
-        # Se crea y se escribe el log
-        escribirLog(numCliente, nombreArchivo, cantConexiones,
-                    mensajeComprobacionHash, tiempoDeTransmision)
+        date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        archivo = open(
+            "Logs/{} (Cliente {}).txt".format(date, numCliente), "w")
 
-        s.close()
-def recibirArchivoDelServidor(s, listo):
-    global host, port, transfExitosa, tiempoDeTransmision
+        # b.
+        archivo.write("Nombre del archivo recibido: {}\n".format(nombreArchivo))
+        archivo.write("Tamano del archivo recibido: {} bytes\n\n".format(os.path.getsize(
+            "ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]))))
 
+        # c.
+        archivo.write(
+            "Servidor desde el que se realizo la transferencia: ({}, {})\n\n".format(host, port))
 
+        # d.
+        archivo.write("Resultado de la transferencia: {}\n\n".format(
+            mensajeComprobacionHash))
 
+        # e.
+        archivo.write("Tiempo de transmision: {:.2f} segundos\n".format(tiempoDeTransmision))
 
-def escribirLog(numCliente, nombreArchivo, cantConexiones, mensajeComprobacionHash, tiempoDeTransmision):
-    # a.
-    fechaStr = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    archivo = open(
-        "Logs/{} (Cliente {}).txt".format(fechaStr, numCliente), "w")
+        archivo.close()
+        self.socket.close()
 
-    # b.
-    archivo.write("Nombre del archivo recibido: {}\n".format(nombreArchivo))
-    archivo.write("Tamano del archivo recibido: {} bytes\n\n".format(os.path.getsize(
-        "ArchivosRecibidos/Cliente{}-Prueba-{}.{}".format(numCliente, cantConexiones, nombreArchivo.split(".")[-1]))))
-
-    # c.
-    archivo.write(
-        "Servidor desde el que se realizo la transferencia: ({}, {})\n\n".format(host, port))
-
-    # d.
-    archivo.write("Resultado de la transferencia: {}\n\n".format(
-        mensajeComprobacionHash))
-
-    # e.
-    archivo.write("Tiempo de transmision: {:.2f} segundos\n".format(
-        tiempoDeTransmision))
-
-    archivo.close()
 
 
 print("\n\n----- Programa Cliente Servidor TCP -----\n\n")
