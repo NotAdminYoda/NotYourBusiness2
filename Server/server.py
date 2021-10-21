@@ -52,6 +52,7 @@ class ThreadCliente(Thread):
         estadisticasTransmision[self.id] = time() - self.startEnvio
         print(adrsClient, self.direccionCliente)
         resultado = resultado.decode()
+        print("Resultado Hash", resultado)
         diccionarioComprobacionesHashArchivos[self.id] = resultado
         if resultado == "La integridad del archivo es correcta":
             entregados += 1

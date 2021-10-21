@@ -105,7 +105,7 @@ while True:
     else:
         print("Seleccione una opción valida.")
 """
-host = '192.168.87.85'
+host = '192.168.10.24'
 port = 8000
 arregloClientes = []
 for i in range(numeroDeClientes):
