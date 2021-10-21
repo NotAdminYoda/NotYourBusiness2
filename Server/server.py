@@ -113,6 +113,7 @@ arregloDirecciones = []
 for i in range(numeroDeClientes):
     mensajeCliente, direccionCliente = socketServerUDP.recvfrom(
         BUFFER_SIZE)  # mensaje de Recibido, tupla con 0 la ip y 1 el puerto
+    print(mensajeCliente, i)
     print(
         f"Conexion del cliente con ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
     t = ThreadCliente(i, direccionCliente, nArchivo, copy.copy(
