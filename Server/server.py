@@ -41,10 +41,11 @@ class ThreadCliente(Thread):
         while cent:
             socketServerUDP.sendto(
                 self.bytesArchivo[start:finish], self.direccionCliente)
-            start = finish
+            start += MAX_BUFFER_SIZE
             finish += MAX_BUFFER_SIZE
-            if bytesArchivo[start:finish] == "".encode():
+            if bytesArchivo[start:finish] == ''.encode():
                 cent = False
+            sleep(0.001)
         socketServerUDP.sendto("ArchivoEnviado".encode(),
                                self.direccionCliente)
         resultado, adrsClient = socketServerUDP.recvfrom(BUFFER_SIZE)

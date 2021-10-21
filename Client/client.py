@@ -24,13 +24,13 @@ class ThreadServidor(Thread):
 
     def run(self):
         self.socket.sendto("ImReadyServer".encode(), self.address)
-        self.id, addressServer = self.socket.recvfrom(BUFFER_SIZE).decode()
-        self.nArchivo, addressServer = self.socket.recvfrom(
-            BUFFER_SIZE).decode()
-        self.tamanioArchivoServidor, addressServer = self.socket.recvfrom(
-            BUFFER_SIZE).decode()
-        self.hashServidor, addressServer = self.socket.recvfrom(
-            BUFFER_SIZE).decode()
+        self.id, addressServer = self.socket.recvfrom(BUFFER_SIZE)
+        self.id = self.id.decode()
+        self.nArchivo, addressServer = self.socket.recvfrom(BUFFER_SIZE)
+        self.nArchivo = self.nArchivo.decode()
+        self.tamanioArchivoServidor, addressServer = self.socket.recvfrom(BUFFER_SIZE)
+        self.tamanioArchivoServidor = self.tamanioArchivoServidor.decode()
+        self.hashServidor, addressServer = self.socket.recvfrom(BUFFER_SIZE)
         date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         file1 = open(
             f"ArchivosRecibidos/{date}-Cliente{self.id}-Prueba-{self.numeroConexiones}.txt", "wb")
