@@ -1,46 +1,56 @@
-from socket import socket
+from socket import socket, AF_INET, SOCK_DGRAM
 from threading import Thread
 from hashlib import sha256
 from time import time
 from datetime import datetime
 from os import path
-BUFFER_SIZE = 1024
+BUFFER_SIZE = 4096
+MAX_BUFFER_SIZE = 64000
 
 
 class ThreadServidor(Thread):
-    def __init__(self, id, socket):
+    def __init__(self, id, socket, address, nConexiones):
         Thread.__init__(self)
         self.id = id
         self.socket = socket
-        self.numeroConexiones = ""
+        self.numeroConexiones = nConexiones
+        self.tamanioArchivoServidor = None
         self.nArchivo = ""
         self.hashCalculado = ""
         self.hashServidor = ""
         self.startTime = None
         self.tiempoTotal = None
+        self.address = address
 
     def run(self):
-        self.socket.send("ImReadyServer".encode())
-        self.id = self.socket.recv(BUFFER_SIZE).decode()
-        self.numeroConexiones = self.socket.recv(BUFFER_SIZE).decode()
-        self.nArchivo = self.socket.recv(BUFFER_SIZE).decode()
-        self.hashServidor = self.socket.recv(BUFFER_SIZE)
+        self.socket.sendto("ImReadyServer".encode(), self.address)
+        self.id, addressServer = self.socket.recvfrom(BUFFER_SIZE).decode()
+        self.nArchivo, addressServer = self.socket.recvfrom(
+            BUFFER_SIZE).decode()
+        self.tamanioArchivoServidor, addressServer = self.socket.recvfrom(
+            BUFFER_SIZE).decode()
+        self.hashServidor, addressServer = self.socket.recvfrom(
+            BUFFER_SIZE).decode()
         date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         file1 = open(
             f"ArchivosRecibidos/{date}-Cliente{self.id}-Prueba-{self.numeroConexiones}.txt", "wb")
         print(f"Recibiendo archivo de Cliente {self.id}...")
         self.startTime = time()
-        response = self.socket.recv(BUFFER_SIZE*64)
-        while True:
+        response, addressServer = self.socket.recvfrom(MAX_BUFFER_SIZE)
+        cent = True
+        while cent:
             if 'ArchivoEnviado\'' not in str(response):
                 file1.write(response)
-                response = self.socket.recv(BUFFER_SIZE*64)
+                try:
+                    response, addressServer = self.socket.recvfrom(
+                        MAX_BUFFER_SIZE)
+                except:
+                    cent = False
             else:
-                break
-
+                cent = False
+        self.tiempoTotal = time() - self.startTime
         file1.write(response[:-14])
         file1.close()
-        self.tiempoTotal = time() - self.startTime
         print(
             f"Transmision y Escritura del archivo {self.nArchivo} Completada para el cliente {self.id}")
         hashCode = sha256()
@@ -59,7 +69,7 @@ class ThreadServidor(Thread):
             print(
                 f"El archivo {self.nArchivo} del cliente {self.id} tiene comprobacion de integridad incorrecta.")
 
-        self.socket.send(mensajeComprobacionHash.encode())
+        self.socket.sendto(mensajeComprobacionHash.encode(), self.address)
         file3 = open(f"Logs/{date} Cliente{self.id}.txt", "w")
         file3.write(f"Archivo Recibido: {self.nArchivo.split('/')[1]}\n")
         tamanioArchivo = path.getsize(
@@ -72,28 +82,34 @@ class ThreadServidor(Thread):
         self.socket.close()
 
 
-print("\n\n----- Programa Cliente Servidor TCP -----\n\n")
+print("\n\n----- Programa Cliente UDP -----\n\n")
 numeroDeClientes = ""
 while True:
     numeroDeClientes = input("Numero de clientes (Threads): ")
     if numeroDeClientes.isnumeric():
         numeroDeClientes = int(numeroDeClientes)
         if numeroDeClientes <= 0 or numeroDeClientes > 25:
-            print("Seleccione una opción valida")
+            print("Seleccione entre 1 y 25 clientes concurrentes.")
         else:
             break
     else:
         print("Seleccione una opción valida")
-#host = input("Ingres IP del Servidor TCP: ")
-host = '192.168.10.20'
+"""
+while True:
+    host = input("Ingrese la IP del Servidor UDP (Recuerde usar el comando ifconfig para conocer la IP): ")
+    if len(host.strip().split(".")) == 4:
+        break
+    else:
+        print("Seleccione una opción valida.")
+"""
+host = '192.168.87.85'
 port = 8000
 arregloClientes = []
 for i in range(numeroDeClientes):
-    sckt = socket()
-    sckt.connect((host, port))
+    sckt = socket(AF_INET, SOCK_DGRAM)
     print(
         f"Conexion del cliente {i} al servidor con ip {host} y puerto {port}")
-    thread = ThreadServidor(i, sckt)
+    thread = ThreadServidor(i, sckt, (host, port), numeroDeClientes)
     arregloClientes.append(thread)
 for thread in arregloClientes:
     thread.start()

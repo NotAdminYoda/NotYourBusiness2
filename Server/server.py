@@ -32,7 +32,7 @@ class ThreadCliente(Thread):
         socketServerUDP.sendto(
             self.nombreArchivo.encode(), self.direccionCliente)
         socketServerUDP.sendto(
-            self.tamanioArchivo.encode(), self.direccionCliente)
+            str(self.tamanioArchivo).encode(), self.direccionCliente)
         socketServerUDP.sendto(self.hashCode, self.direccionCliente)
         self.startEnvio = time()
         cent = True
@@ -58,7 +58,7 @@ class ThreadCliente(Thread):
             f"Finalizacion envio de archivo al Cliente {self.id} con IP {self.direccionCliente[0]} y puerto {self.direccionCliente[1]}")
 
 
-print("------- Programa Servidor UDP -------\n")
+print("\n\n------- Programa Servidor UDP -------\n")
 print("Recuerda ejecutar el comando 'truncate -s 100M 100MB.txt' en la carpeta /ArchivosAEnviar")
 print("Recuerda ejecutar el comando 'truncate -s 250M 250MB.txt' en la carpeta /ArchivosAEnviar")
 print("\nRecuerda ejecutar el comando ifconfig para conocer la IP del servidor.")
@@ -110,8 +110,7 @@ arregloClientes = []
 arregloDirecciones = []
 
 for i in range(numeroDeClientes):
-    mensajeCliente, direccionCliente = socketServerUDP.recvfrom(
-        BUFFER_SIZE)  # mensaje de Recibido, tupla con 0 la ip y 1 el puerto
+    mensajeCliente, direccionCliente = socketServerUDP.recvfrom(BUFFER_SIZE)  # mensaje de Recibido, tupla con 0 la ip y 1 el puerto
     print(
         f"Conexion del cliente con ip {direccionCliente[0]} y puerto {direccionCliente[1]}")
     t = ThreadCliente(i, direccionCliente, nArchivo, copy.copy(
@@ -120,11 +119,11 @@ for i in range(numeroDeClientes):
     arregloDirecciones.append(direccionCliente)
 
     if len(arregloClientes) == numeroDeClientes:
-        for t in arregloClientes:
-            t.start()
+        for x in arregloClientes:
+            x.start()
 
-        for t in arregloClientes:
-            t.join()
+        for x in arregloClientes:
+            x.join()
 
         # Log
         date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
