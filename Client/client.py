@@ -28,7 +28,8 @@ class ThreadServidor(Thread):
         self.id = self.id.decode()
         self.nArchivo, addressServer = self.socket.recvfrom(BUFFER_SIZE)
         self.nArchivo = self.nArchivo.decode()
-        self.tamanioArchivoServidor, addressServer = self.socket.recvfrom(BUFFER_SIZE)
+        self.tamanioArchivoServidor, addressServer = self.socket.recvfrom(
+            BUFFER_SIZE)
         self.tamanioArchivoServidor = self.tamanioArchivoServidor.decode()
         self.hashServidor, addressServer = self.socket.recvfrom(BUFFER_SIZE)
         date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -38,6 +39,7 @@ class ThreadServidor(Thread):
         self.startTime = time()
         response, addressServer = self.socket.recvfrom(MAX_BUFFER_SIZE)
         cent = True
+        self.socket.settimeout(10)
         while cent:
             if 'ArchivoEnviado\'' not in str(response):
                 file1.write(response)
