@@ -61,8 +61,9 @@ class ThreadServidor(Thread):
         hashCode.update(file2.read())
         file2.close()
         self.hashCalculado = hashCode.digest()
-        print(self.tamanioArchivoServidor, path.getsize(fileName))
-        mensajeComprobacionHash = "La integridad del archivo es correcta" if self.hashCalculado == self.hashServidor else "La integridad del archivo no es correcta"
+        print(
+            f"Tamaño archivo original: {self.tamanioArchivoServidor} Tamaño archivo recibido: {path.getsize(fileName)}")
+        mensajeComprobacionHash = "La integridad del archivo es correcta" if self.hashCalculado == self.hashServidor and tamanioArchivo else "La integridad del archivo no es correcta"
         print(f"Hash Calculado {self.hashCalculado.hex()}")
         print(f"Hash Recibido {self.hashServidor.hex()}")
         if mensajeComprobacionHash == "La integridad del archivo es correcta":
@@ -97,15 +98,15 @@ while True:
             break
     else:
         print("Seleccione una opción valida")
-"""
+
 while True:
-    host = input("Ingrese la IP del Servidor UDP (Recuerde usar el comando ifconfig para conocer la IP): ")
+    host = input(
+        "Ingrese la IP del Servidor UDP (Recuerde usar el comando ifconfig para conocer la IP): ")
     if len(host.strip().split(".")) == 4:
         break
     else:
         print("Seleccione una opción valida.")
-"""
-host = '192.168.10.24'
+#host = '192.168.10.24'
 port = 8000
 arregloClientes = []
 for i in range(numeroDeClientes):

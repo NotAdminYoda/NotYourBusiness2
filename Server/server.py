@@ -100,6 +100,7 @@ while True:
             break
     else:
         print("Seleccione una opción valida")
+# esto hace un server udp es la diferencia
 socketServerUDP = socket(AF_INET, SOCK_DGRAM)
 host = '0.0.0.0'
 port = 8000
