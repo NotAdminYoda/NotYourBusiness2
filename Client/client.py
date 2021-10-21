@@ -33,8 +33,8 @@ class ThreadServidor(Thread):
         self.tamanioArchivoServidor = self.tamanioArchivoServidor.decode()
         self.hashServidor, addressServer = self.socket.recvfrom(BUFFER_SIZE)
         date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        file1 = open(
-            f"ArchivosRecibidos/{date}-Cliente{self.id}-Prueba-{self.numeroConexiones}.txt", "wb")
+        fileName = f"ArchivosRecibidos/{date}-Cliente{self.id}-Prueba-{self.numeroConexiones}.txt"
+        file1 = open(fileName, "wb")
         print(f"Recibiendo archivo de Cliente {self.id}...")
         self.startTime = time()
         response, addressServer = self.socket.recvfrom(MAX_BUFFER_SIZE)
@@ -61,6 +61,7 @@ class ThreadServidor(Thread):
         hashCode.update(file2.read())
         file2.close()
         self.hashCalculado = hashCode.digest()
+        print(self.tamanioArchivoServidor, path.getsize(fileName))
         mensajeComprobacionHash = "La integridad del archivo es correcta" if self.hashCalculado == self.hashServidor else "La integridad del archivo no es correcta"
         print(f"Hash Calculado {self.hashCalculado.hex()}")
         print(f"Hash Recibido {self.hashServidor.hex()}")
