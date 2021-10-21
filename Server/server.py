@@ -134,7 +134,7 @@ for i in range(numeroDeClientes):
         date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         file = open(f"Logs/{date}.txt", "w")
         file.write(
-            f"Archivo enviado: {nArchivo} - Tamanio en Bytes: {tamanioArchivo}")
+            f"Archivo enviado: {nArchivo.split('/')[1]} - Tamanio en Bytes: {tamanioArchivo}")
         file.write(
             "\nIdentificacion por conexión del cliente al que se realiza la transferencia de archivos:\n")
         for j in range(numeroDeClientes):

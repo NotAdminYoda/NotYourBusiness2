@@ -28,6 +28,7 @@ class ThreadServidor(Thread):
         self.id = self.id.decode()
         self.nArchivo, addressServer = self.socket.recvfrom(BUFFER_SIZE)
         self.nArchivo = self.nArchivo.decode()
+        self.nArchivo = self.nArchivo.split('/')[1]
         self.tamanioArchivoServidor, addressServer = self.socket.recvfrom(
             BUFFER_SIZE)
         self.tamanioArchivoServidor = self.tamanioArchivoServidor.decode()
@@ -35,7 +36,7 @@ class ThreadServidor(Thread):
         date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         fileName = f"ArchivosRecibidos/{date}-Cliente{self.id}-Prueba-{self.numeroConexiones}.txt"
         file1 = open(fileName, "wb")
-        print(f"Recibiendo archivo de Cliente {self.id}...")
+        print(f"Recibiendo archivo del Cliente {self.id}...")
         self.startTime = time()
         response, addressServer = self.socket.recvfrom(MAX_BUFFER_SIZE)
         cent = True
@@ -61,26 +62,26 @@ class ThreadServidor(Thread):
         hashCode.update(file2.read())
         file2.close()
         self.hashCalculado = hashCode.digest()
+        tamanioArchivo = path.getsize(
+            f"ArchivosRecibidos/{date}-Cliente{self.id}-Prueba-{self.numeroConexiones}.txt")
         print(
             f"Tamaño archivo original: {self.tamanioArchivoServidor} Tamaño archivo recibido: {path.getsize(fileName)}")
-        mensajeComprobacionHash = "La integridad del archivo es correcta" if self.hashCalculado == self.hashServidor and tamanioArchivo else "La integridad del archivo no es correcta"
+        mensajeComprobacionHash = "La integridad del archivo es correcta" if self.hashCalculado == self.hashServidor and str(
+            tamanioArchivo) == self.tamanioArchivoServidor else "La integridad del archivo no es correcta"
         print(f"Hash Calculado {self.hashCalculado.hex()}")
         print(f"Hash Recibido {self.hashServidor.hex()}")
         if mensajeComprobacionHash == "La integridad del archivo es correcta":
-            print(
-                f"El archivo {self.nArchivo} del cliente {self.id} tiene comprobacion de integridad correcta.")
+            mensajeFinal = f"El archivo {self.nArchivo} del cliente {self.id} tiene comprobacion de integridad correcta:\n\tHash Recibido: {self.hashServidor.hex()}\n\tHash Calculado: {self.hashCalculado.hex()}\n\tTamaño archivo original: {self.tamanioArchivoServidor}\n\tTamaño archivo recibido: {tamanioArchivo}\n"
         else:
-            print(
-                f"El archivo {self.nArchivo} del cliente {self.id} tiene comprobacion de integridad incorrecta.")
+            mensajeFinal = f"El archivo {self.nArchivo} del cliente {self.id} tiene comprobacion de integridad incorrecta.:\n\tHash Recibido: {self.hashServidor.hex()}\n\tHash Calculado: {self.hashCalculado.hex()}\n\tTamaño archivo original: {self.tamanioArchivoServidor}\n\tTamaño archivo recibido: {tamanioArchivo}\n"
 
         self.socket.sendto(mensajeComprobacionHash.encode(), self.address)
         file3 = open(f"Logs/{date} Cliente{self.id}.txt", "w")
-        file3.write(f"Archivo Recibido: {self.nArchivo.split('/')[1]}\n")
-        tamanioArchivo = path.getsize(
-            f"ArchivosRecibidos/{date}-Cliente{self.id}-Prueba-{self.numeroConexiones}.txt")
+        file3.write(f"Archivo Recibido: {self.nArchivo}\n")
+
         file3.write(f"Tamanio archivo recibido: {tamanioArchivo} bytes\n")
         file3.write(f"Servidor con ip {host} y puerto {port}\n")
-        file3.write(f"Integridad del archivo: {mensajeComprobacionHash}\n")
+        file3.write(f"Integridad del archivo:\n{mensajeFinal}")
         file3.write(f"Tiempo de transmision: {self.tiempoTotal} segundos\n")
         file3.close()
         self.socket.close()
@@ -106,7 +107,7 @@ while True:
         break
     else:
         print("Seleccione una opción valida.")
-#host = '192.168.10.24'
+# host = '192.168.10.24'
 port = 8000
 arregloClientes = []
 for i in range(numeroDeClientes):
